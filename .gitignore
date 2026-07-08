@@ -1,0 +1,15 @@
+node_modules/
+dist/
+
+# builds locales
+apps/api/meshcore.db
+apps/api/meshcore.db-*
+infra/data/
+
+# entornos locales (no comitear secretos)
+.env
+apps/web/.env
+infra/.env
+
+# settings locales de Claude Code (permisos por máquina, no compartidos)
+.claude/settings.local.json

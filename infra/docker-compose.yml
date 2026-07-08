@@ -1,0 +1,40 @@
+services:
+  api:
+    build:
+      context: ../apps/api
+    restart: unless-stopped
+    volumes:
+      # Bind mount (no volumen anónimo): el .db queda accesible directo
+      # en el host para respaldos o inspección directa (sqlite3 CLI).
+      - ./data:/data
+    environment:
+      PORT: "8080"
+      DB_PATH: /data/meshcore.db
+      JWT_SECRET: ${JWT_SECRET:-change-me-in-production}
+      H3_RESOLUTION: ${H3_RESOLUTION:-8}
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.meshcore-api.rule=Host(`api.meshcore.example.com`)"
+      - "traefik.http.routers.meshcore-api.entrypoints=websecure"
+      - "traefik.http.routers.meshcore-api.tls.certresolver=letsencrypt"
+      - "traefik.http.services.meshcore-api.loadbalancer.server.port=8080"
+
+  web:
+    build:
+      context: ../apps/web
+      args:
+        PUBLIC_API_URL: ${PUBLIC_API_URL:-https://api.meshcore.example.com}
+    restart: unless-stopped
+    depends_on:
+      - api
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.meshcore-web.rule=Host(`meshcore.example.com`)"
+      - "traefik.http.routers.meshcore-web.entrypoints=websecure"
+      - "traefik.http.routers.meshcore-web.tls.certresolver=letsencrypt"
+      - "traefik.http.services.meshcore-web.loadbalancer.server.port=80"
+
+networks:
+  default:
+    name: meshcore-net
+    external: false

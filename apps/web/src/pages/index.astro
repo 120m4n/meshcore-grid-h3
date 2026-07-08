@@ -1,0 +1,104 @@
+---
+import '../styles/global.css';
+---
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mapa de disponibilidad MeshCore — Santander</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+</head>
+<body>
+  <header class="topbar">
+    <h1>MeshCore Santander</h1>
+    <nav>
+      <a href="/reportar">Reportar conectividad</a>
+      <a href="/login" id="nav-login">Ingresar</a>
+      <a href="/admin" id="nav-admin" hidden>Admin</a>
+      <button id="btn-refresh">Actualizar mapa</button>
+    </nav>
+  </header>
+
+  <div id="map"></div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/h3-js@4.1.0/dist/h3-js.umd.js"></script>
+  <script type="module">
+    import { getCells } from '../lib/api.ts';
+
+    // --- Acotamiento geográfico: Bucaramanga centro, extent Santander ---
+    const CENTER = [7.1193, -73.1227];
+    const SANTANDER_BOUNDS = [
+      [5.65, -74.45], // suroeste
+      [8.35, -72.50], // noreste
+    ];
+
+    const map = L.map('map', {
+      center: CENTER,
+      zoom: 11,
+      minZoom: 9,
+      maxZoom: 14,
+      maxBounds: SANTANDER_BOUNDS,
+      maxBoundsViscosity: 1.0,
+    });
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap contributors',
+    }).addTo(map);
+
+    map.setMaxBounds(SANTANDER_BOUNDS);
+
+    let cellLayer = L.layerGroup().addTo(map);
+
+    function colorForScore(scorePct) {
+      // rojo (0%) -> amarillo (50%) -> verde (100%)
+      if (scorePct >= 66) return '#2ecc71';
+      if (scorePct >= 33) return '#f1c40f';
+      return '#e74c3c';
+    }
+
+    async function loadCells() {
+      cellLayer.clearLayers();
+      try {
+        const cells = await getCells();
+        for (const cell of cells) {
+          const boundary = h3.cellToBoundary(cell.h3_index); // [[lat,lon], ...]
+          const polygon = L.polygon(boundary, {
+            color: '#333',
+            weight: 1,
+            fillColor: colorForScore(cell.score_pct),
+            fillOpacity: 0.55,
+          }).addTo(cellLayer);
+
+          polygon.bindPopup(`
+            <strong>Celda:</strong> ${cell.h3_index}<br/>
+            <strong>Conectividad:</strong> ${cell.score_pct.toFixed(0)}%<br/>
+            <strong>Reportes:</strong> ${cell.report_count}<br/>
+            <strong>Último reporte:</strong> ${new Date(cell.last_report_at).toLocaleString('es-CO')}
+          `);
+        }
+      } catch (err) {
+        console.error('Error cargando celdas:', err);
+      }
+    }
+
+    document.getElementById('btn-refresh').addEventListener('click', loadCells);
+    loadCells();
+
+    // Mostrar/ocultar nav según sesión
+    const token = localStorage.getItem('token');
+    const role = localStorage.getItem('role');
+    if (token) {
+      document.getElementById('nav-login').textContent = 'Salir';
+      document.getElementById('nav-login').addEventListener('click', (e) => {
+        e.preventDefault();
+        localStorage.clear();
+        location.reload();
+      });
+    }
+    if (role === 'admin') {
+      document.getElementById('nav-admin').hidden = false;
+    }
+  </script>
+</body>
+</html>

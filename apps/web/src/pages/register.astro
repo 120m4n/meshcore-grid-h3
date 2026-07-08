@@ -1,0 +1,39 @@
+---
+import '../styles/global.css';
+---
+<html lang="es">
+<head><meta charset="UTF-8" /><title>Registro — MeshCore Santander</title></head>
+<body>
+  <main class="form-container">
+    <h1>Crear cuenta</h1>
+    <form id="register-form">
+      <label>Nombre a mostrar <input type="text" id="display_name" required /></label>
+      <label>Email <input type="email" id="email" required /></label>
+      <label>Contraseña (mín. 8 caracteres) <input type="password" id="password" minlength="8" required /></label>
+      <button type="submit">Registrarme</button>
+    </form>
+    <p id="status"></p>
+  </main>
+
+  <script type="module">
+    import { register } from '../lib/api.ts';
+
+    document.getElementById('register-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const status = document.getElementById('status');
+      try {
+        const res = await register(
+          document.getElementById('email').value,
+          document.getElementById('password').value,
+          document.getElementById('display_name').value
+        );
+        localStorage.setItem('token', res.token);
+        localStorage.setItem('role', 'user');
+        window.location.href = '/';
+      } catch (err) {
+        status.textContent = `Error: ${err.message}`;
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,65 @@
+package handlers
+
+import (
+	"database/sql"
+	"net/http"
+
+	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
+
+	"meshcore-map/api/internal/config"
+	"meshcore-map/api/internal/h3util"
+	"meshcore-map/api/internal/models"
+)
+
+type ReportHandler struct {
+	DB  *sql.DB
+	Cfg config.Config
+}
+
+// Create recibe {lat,lon} o {plus_code}, NUNCA confía en un h3_index
+// enviado por el cliente: siempre se recalcula aquí.
+func (h *ReportHandler) Create(c *gin.Context) {
+	var in models.CreateReportInput
+	if err := c.ShouldBindJSON(&in); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	lat, lon, err := h3util.ResolveLatLon(in.Lat, in.Lon, in.PlusCode)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "coordenadas o plus code inválidos"})
+		return
+	}
+
+	inputMethod := "coords"
+	inputRaw := ""
+	if in.Lat == nil || in.Lon == nil {
+		inputMethod = "pluscode"
+		inputRaw = *in.PlusCode
+	}
+
+	cellIndex := h3util.CellFromLatLon(lat, lon, h.Cfg.H3Resolution)
+	userID, _ := c.Get("user_id")
+
+	reportID := uuid.NewString()
+	_, err = h.DB.Exec(
+		`INSERT INTO reports
+		 (id, h3_index, h3_resolution, lat, lon, input_method, input_raw,
+		  reporter_id, signal_quality, message, status)
+		 VALUES (?,?,?,?,?,?,?,?,?,?,'pending')`,
+		reportID, cellIndex, h.Cfg.H3Resolution, lat, lon, inputMethod, inputRaw,
+		userID, in.SignalQuality, in.Message,
+	)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "no se pudo guardar el reporte"})
+		return
+	}
+
+	c.JSON(http.StatusCreated, gin.H{
+		"id":       reportID,
+		"h3_index": cellIndex,
+		"status":   "pending",
+		"message":  "Reporte enviado, queda pendiente de revisión por un administrador.",
+	})
+}

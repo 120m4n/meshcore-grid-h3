@@ -1,0 +1,77 @@
+---
+import '../../styles/global.css';
+---
+<html lang="es">
+<head><meta charset="UTF-8" /><title>Moderación — MeshCore Santander</title></head>
+<body>
+  <header class="topbar">
+    <h1>Reportes pendientes</h1>
+    <nav><a href="/">Volver al mapa</a></nav>
+  </header>
+
+  <main>
+    <table id="reports-table">
+      <thead>
+        <tr>
+          <th>Celda H3</th><th>Quién reporta</th><th>Calidad</th>
+          <th>Mensaje</th><th>Fecha</th><th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+    <p id="status"></p>
+  </main>
+
+  <script type="module">
+    import { getPendingReports, reviewReport } from '../../lib/api.ts';
+
+    const token = localStorage.getItem('token');
+    const role = localStorage.getItem('role');
+    if (!token || role !== 'admin') {
+      window.location.href = '/';
+    }
+
+    const tbody = document.querySelector('#reports-table tbody');
+    const status = document.getElementById('status');
+
+    async function load() {
+      tbody.innerHTML = '';
+      try {
+        const reports = await getPendingReports();
+        if (reports.length === 0) {
+          status.textContent = 'No hay reportes pendientes.';
+        }
+        for (const r of reports) {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td>${r.h3_index}</td>
+            <td>${r.reporter_name}</td>
+            <td>${r.signal_quality}</td>
+            <td>${r.message || '-'}</td>
+            <td>${new Date(r.created_at).toLocaleString('es-CO')}</td>
+            <td>
+              <button data-id="${r.id}" data-action="approved">Aprobar</button>
+              <button data-id="${r.id}" data-action="rejected">Rechazar</button>
+            </td>`;
+          tbody.appendChild(tr);
+        }
+      } catch (err) {
+        status.textContent = `Error: ${err.message}`;
+      }
+    }
+
+    tbody.addEventListener('click', async (e) => {
+      const btn = e.target.closest('button');
+      if (!btn) return;
+      try {
+        await reviewReport(btn.dataset.id, btn.dataset.action);
+        load();
+      } catch (err) {
+        status.textContent = `Error: ${err.message}`;
+      }
+    });
+
+    load();
+  </script>
+</body>
+</html>

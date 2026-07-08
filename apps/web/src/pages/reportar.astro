@@ -1,0 +1,116 @@
+---
+import '../styles/global.css';
+---
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Reportar conectividad — MeshCore Santander</title>
+</head>
+<body>
+  <header class="topbar">
+    <h1>Reportar conectividad</h1>
+    <nav><a href="/">Volver al mapa</a></nav>
+  </header>
+
+  <main class="form-container">
+    <form id="report-form">
+      <fieldset>
+        <legend>Ubicación</legend>
+        <label>
+          <input type="radio" name="input_method" value="coords" checked />
+          Coordenadas GPS
+        </label>
+        <label>
+          <input type="radio" name="input_method" value="pluscode" />
+          Plus Code
+        </label>
+
+        <div id="coords-fields">
+          <label>Latitud <input type="number" step="any" id="lat" placeholder="7.1193" /></label>
+          <label>Longitud <input type="number" step="any" id="lon" placeholder="-73.1227" /></label>
+          <button type="button" id="btn-geo">Usar mi ubicación actual</button>
+        </div>
+
+        <div id="pluscode-fields" hidden>
+          <label>Plus Code <input type="text" id="plus_code" placeholder="p.ej. 869876XV+GX" /></label>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Reporte</legend>
+        <label>Calidad de señal
+          <select id="signal_quality" required>
+            <option value="sin_cobertura">Sin cobertura</option>
+            <option value="debil">Débil</option>
+            <option value="buena">Buena</option>
+            <option value="excelente">Excelente</option>
+          </select>
+        </label>
+        <label>Mensaje (opcional)
+          <textarea id="message" rows="3" placeholder="Detalles adicionales..."></textarea>
+        </label>
+      </fieldset>
+
+      <p class="hint">
+        Quién reporta y fecha se toman automáticamente de tu sesión. El reporte
+        queda <strong>pendiente de aprobación</strong> por un administrador antes
+        de aparecer en el mapa.
+      </p>
+
+      <button type="submit">Enviar reporte</button>
+      <p id="form-status"></p>
+    </form>
+  </main>
+
+  <script type="module">
+    import { createReport } from '../lib/api.ts';
+
+    if (!localStorage.getItem('token')) {
+      window.location.href = '/login';
+    }
+
+    const radios = document.querySelectorAll('input[name="input_method"]');
+    radios.forEach((r) =>
+      r.addEventListener('change', () => {
+        const method = document.querySelector('input[name="input_method"]:checked').value;
+        document.getElementById('coords-fields').hidden = method !== 'coords';
+        document.getElementById('pluscode-fields').hidden = method !== 'pluscode';
+      })
+    );
+
+    document.getElementById('btn-geo').addEventListener('click', () => {
+      navigator.geolocation.getCurrentPosition((pos) => {
+        document.getElementById('lat').value = pos.coords.latitude;
+        document.getElementById('lon').value = pos.coords.longitude;
+      });
+    });
+
+    document.getElementById('report-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const status = document.getElementById('form-status');
+      const method = document.querySelector('input[name="input_method"]:checked').value;
+
+      const payload = {
+        signal_quality: document.getElementById('signal_quality').value,
+        message: document.getElementById('message').value,
+      };
+
+      if (method === 'coords') {
+        payload.lat = parseFloat(document.getElementById('lat').value);
+        payload.lon = parseFloat(document.getElementById('lon').value);
+      } else {
+        payload.plus_code = document.getElementById('plus_code').value;
+      }
+
+      try {
+        const res = await createReport(payload);
+        status.textContent = `Reporte enviado (celda ${res.h3_index}). Pendiente de aprobación.`;
+        status.className = 'ok';
+      } catch (err) {
+        status.textContent = `Error: ${err.message}`;
+        status.className = 'error';
+      }
+    });
+  </script>
+</body>
+</html>
