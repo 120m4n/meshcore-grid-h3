@@ -47,21 +47,22 @@ type User struct {
 }
 
 type Report struct {
-	ID            string        `json:"id"`
-	H3Index       string        `json:"h3_index"`
-	H3Resolution  int           `json:"h3_resolution"`
-	Lat           float64       `json:"lat"`
-	Lon           float64       `json:"lon"`
-	InputMethod   string        `json:"input_method"` // "coords" | "pluscode"
-	InputRaw      string        `json:"input_raw,omitempty"`
-	ReporterID    string        `json:"reporter_id"`
-	ReporterName  string        `json:"reporter_name,omitempty"`
-	SignalQuality SignalQuality `json:"signal_quality"`
-	Message       string        `json:"message,omitempty"`
-	Status        ReportStatus  `json:"status"`
-	ReviewedBy    *string       `json:"reviewed_by,omitempty"`
-	ReviewedAt    *string       `json:"reviewed_at,omitempty"`
-	CreatedAt     string        `json:"created_at"`
+	ID                  string        `json:"id"`
+	H3Index             string        `json:"h3_index"`
+	H3Resolution        int           `json:"h3_resolution"`
+	Lat                 float64       `json:"lat"`
+	Lon                 float64       `json:"lon"`
+	InputMethod         string        `json:"input_method"` // "coords" | "pluscode"
+	InputRaw            string        `json:"input_raw,omitempty"`
+	ReporterID          string        `json:"reporter_id"`
+	ReporterName        string        `json:"reporter_name,omitempty"`
+	ReporterDisplayName *string       `json:"reporter_display_name,omitempty"`
+	SignalQuality       SignalQuality `json:"signal_quality"`
+	Message             string        `json:"message,omitempty"`
+	Status              ReportStatus  `json:"status"`
+	ReviewedBy          *string       `json:"reviewed_by,omitempty"`
+	ReviewedAt          *string       `json:"reviewed_at,omitempty"`
+	CreatedAt           string        `json:"created_at"`
 }
 
 // CellAggregate es lo que consume el mapa público (endpoint /cells).
@@ -74,9 +75,10 @@ type CellAggregate struct {
 
 // CreateReportInput acepta lat/lon O plus_code, nunca ambos vacíos.
 type CreateReportInput struct {
-	Lat           *float64      `json:"lat"`
-	Lon           *float64      `json:"lon"`
-	PlusCode      *string       `json:"plus_code"`
-	SignalQuality SignalQuality `json:"signal_quality" binding:"required"`
-	Message       string        `json:"message"`
+	Lat                 *float64      `json:"lat"`
+	Lon                 *float64      `json:"lon"`
+	PlusCode            *string       `json:"plus_code"`
+	ReporterDisplayName *string       `json:"reporter_display_name"`
+	SignalQuality       SignalQuality `json:"signal_quality" binding:"required,oneof=sin_cobertura debil buena excelente"`
+	Message             string        `json:"message" binding:"max=120"`
 }

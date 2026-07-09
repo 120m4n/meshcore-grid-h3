@@ -53,6 +53,7 @@ export function createReport(input: {
   lat?: number;
   lon?: number;
   plus_code?: string;
+  reporter_display_name?: string;
   signal_quality: string;
   message?: string;
 }) {

@@ -8,7 +8,7 @@ Mapa de disponibilidad de red MeshCore en Santander (Colombia): celdas H3
 coloreadas por calidad de señal, alimentadas por reportes de usuarios
 moderados por administradores. Monorepo con dos apps independientes
 (`apps/api` en Go, `apps/web` en Astro) más `infra/` para el despliegue
-conjunto vía Docker Compose. No es un repo git (no `.git` presente).
+conjunto vía Docker Compose.
 
 ## Commands
 
@@ -58,6 +58,29 @@ Crear el primer admin (no existe endpoint de promoción, es deliberado):
 sqlite3 infra/data/meshcore.db \
   "UPDATE users SET role = 'admin' WHERE email = 'tu-email@dominio.com';"
 ```
+
+Si el contenedor `api` ya estaba corriendo cuando corriste el `UPDATE`, el
+login puede seguir devolviendo el rol viejo por un rato: el bind mount
+de SQLite con Docker Desktop no siempre refleja escrituras hechas desde
+el host a una conexión ya abierta dentro del contenedor. `docker restart
+infra-api-1` (o `docker compose restart api`) fuerza a reabrir el
+archivo y ver el cambio.
+
+### nginx: rutas limpias necesitan `apps/web/nginx.conf` propio
+
+Astro genera cada página como carpeta (`/login/index.html`,
+`/register/index.html`, etc). El `default.conf` de la imagen base
+`nginx:1.27-alpine` no trae `try_files`: al pedir `/login` (sin slash)
+nginx lo resuelve como directorio y responde **301** a `/login/` usando
+`$host`, que en nginx nunca incluye el puerto. En un host expuesto en
+puerto no estándar (p.ej. `localhost:8081`) el navegador termina
+siguiendo el redirect a `http://localhost/login/` (puerto 80 implícito)
+y no resuelve — se ve como si la ruta directa/reload no funcionara.
+`apps/web/nginx.conf` (copiado a `/etc/nginx/conf.d/default.conf` en el
+Dockerfile) usa `try_files $uri $uri.html $uri/index.html =404;` para
+servir el archivo directo sin pasar por ese redirect. Si agregás rutas
+nuevas o cambiás el output de Astro, verificá con `curl -I` que no
+vuelva un 301 con puerto faltante en el `Location`.
 
 ## Architecture
 
@@ -139,3 +162,12 @@ El mapa Leaflet está fijado a Santander/Bucaramanga (`maxBounds`,
 `minZoom=9`, `maxZoom=14`) — es un mapa de referencia regional, no de
 navegación general; cualquier cambio a bounds/zoom en `index.astro` debe
 respetar ese propósito.
+
+### Referencia visual: `image_mock_base.png`
+
+`image_mock_base.png` (raíz del repo) es un mockup de **orientación**
+de cómo se ve la app con un mapa base tipo satélite (hexágonos H3
+coloreados por señal sobre imagería satelital, leyenda de cobertura,
+branding MeshCore). Es guía de estilo/composición, no el objetivo
+pixel-perfect a replicar — no implica que el mapa base actual (tiles
+OSM estándar) deba cambiar a satélite salvo que se pida explícitamente.

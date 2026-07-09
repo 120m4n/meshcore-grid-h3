@@ -1,26 +1,368 @@
 :root {
-  --brand: #2c3e50;
-  font-family: system-ui, sans-serif;
+  /* --- superficies --- */
+  --bg: #0a1420;
+  --surface: #101d2e;
+  --surface-raised: #16283d;
+  --border: #24384f;
+  --border-bright: #345070;
+
+  /* --- texto --- */
+  --text: #e7edf2;
+  --text-dim: #8ea3b8;
+
+  /* --- acento de marca --- */
+  --accent: #34d7c0;
+  --accent-dim: #1f8f80;
+  --accent-text: #06211d;
+
+  /* --- semántica de señal (no decorativo: mismo código de color en mapa y leyenda) --- */
+  --signal-excelente: #2ecc71;
+  --signal-buena: #f1c40f;
+  --signal-pobre: #e74c3c;
+
+  /* --- tipografía --- */
+  --font-display: ui-monospace, 'SF Mono', 'Cascadia Mono', 'JetBrains Mono', Consolas, 'Liberation Mono', monospace;
+  --font-body: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+
+  color-scheme: dark;
+  font-family: var(--font-body);
 }
-body { margin: 0; }
+
+* { box-sizing: border-box; }
+
+html, body {
+  height: 100%;
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+}
+
+/* ============ topbar ============ */
 .topbar {
-  display: flex; justify-content: space-between; align-items: center;
-  padding: 0.75rem 1.5rem; background: var(--brand); color: white;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.65rem 1.25rem;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+  flex-wrap: wrap;
 }
-.topbar nav a, .topbar nav button {
-  color: white; margin-left: 1rem; text-decoration: none; background: none; border: 1px solid white;
-  padding: 0.3rem 0.7rem; border-radius: 4px; cursor: pointer;
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--text);
+  text-decoration: none;
+  white-space: nowrap;
 }
-#map { position: absolute; top: 56px; bottom: 0; left: 0; right: 0; }
+
+/* signature: barras de señal ascendentes — el mismo lenguaje visual
+   que usa el mapa para representar calidad de conexión */
+.brand-bars {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 14px;
+}
+.brand-bars span {
+  width: 3px;
+  background: var(--accent);
+  border-radius: 1px;
+  display: block;
+}
+.brand-bars span:nth-child(1) { height: 40%; }
+.brand-bars span:nth-child(2) { height: 65%; }
+.brand-bars span:nth-child(3) { height: 85%; }
+.brand-bars span:nth-child(4) { height: 100%; }
+
+.topbar nav {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.topbar nav a,
+.topbar nav button,
+.btn {
+  font-family: var(--font-display);
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text);
+  text-decoration: none;
+  background: transparent;
+  border: 1px solid var(--border-bright);
+  border-radius: 3px;
+  padding: 0.45rem 0.75rem;
+  cursor: pointer;
+  transition: border-color 120ms ease, color 120ms ease, background 120ms ease;
+}
+.topbar nav a:hover,
+.topbar nav button:hover,
+.btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.topbar nav a:focus-visible,
+.topbar nav button:focus-visible,
+.btn:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.btn-primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-text);
+}
+.btn-primary:hover {
+  background: var(--accent-dim);
+  border-color: var(--accent-dim);
+  color: var(--accent-text);
+}
+
+/* ============ mapa ============ */
+#map {
+  position: absolute;
+  top: 56px;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: var(--bg);
+}
+
+/* HUD de leyenda flotante sobre el mapa */
+.legend {
+  position: absolute;
+  z-index: 500;
+  left: 0.9rem;
+  bottom: 1.4rem;
+  background: rgba(16, 29, 46, 0.92);
+  border: 1px solid var(--border-bright);
+  border-radius: 6px;
+  padding: 0.65rem 0.8rem;
+  font-family: var(--font-display);
+  font-size: 0.68rem;
+  color: var(--text-dim);
+  backdrop-filter: blur(4px);
+}
+.legend-title {
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text);
+  margin-bottom: 0.4rem;
+}
+.legend-row {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  line-height: 1.5;
+}
+.legend-swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+/* popups Leaflet a tono con el panel oscuro */
+.leaflet-popup-content-wrapper {
+  background: var(--surface-raised);
+  color: var(--text);
+  border: 1px solid var(--border-bright);
+  border-radius: 6px;
+}
+.leaflet-popup-tip {
+  background: var(--surface-raised);
+  border: 1px solid var(--border-bright);
+}
+.leaflet-popup-content {
+  font-family: var(--font-display);
+  font-size: 0.72rem;
+  line-height: 1.6;
+}
+.leaflet-popup-content strong {
+  color: var(--text-dim);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: 0.62rem;
+}
+.leaflet-container a.leaflet-popup-close-button {
+  color: var(--text-dim);
+}
+.leaflet-bar a {
+  background: var(--surface-raised);
+  color: var(--text);
+  border-bottom: 1px solid var(--border);
+}
+.leaflet-bar a:hover {
+  background: var(--surface);
+  color: var(--accent);
+}
+.leaflet-control-layers {
+  background: var(--surface-raised);
+  border: 1px solid var(--border-bright);
+  color: var(--text);
+  font-family: var(--font-display);
+  font-size: 0.72rem;
+}
+.leaflet-control-layers-separator { border-color: var(--border); }
+
+/* ============ mini-mapa selector de ubicación (reportar) ============ */
+#map-picker {
+  height: 260px;
+  border-radius: 6px;
+  border: 1px solid var(--border-bright);
+  margin-top: 0.4rem;
+}
+
+/* ============ formularios (login/registro/reportar/admin) ============ */
 .form-container {
-  max-width: 480px; margin: 2rem auto; padding: 1rem;
-  display: flex; flex-direction: column; gap: 0.75rem;
+  max-width: 480px;
+  margin: 2rem auto;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
 }
 .form-container form { display: flex; flex-direction: column; gap: 0.75rem; }
-fieldset { border: 1px solid #ccc; border-radius: 6px; }
-label { display: flex; flex-direction: column; gap: 0.25rem; font-size: 0.9rem; }
-.hint { font-size: 0.85rem; color: #555; }
-.ok { color: green; }
-.error { color: crimson; }
+.form-container h1 { font-family: var(--font-display); font-size: 1.2rem; letter-spacing: 0.01em; }
+fieldset { border: 1px solid var(--border); border-radius: 6px; }
+legend {
+  font-family: var(--font-display);
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-dim);
+  padding: 0 0.4rem;
+}
+label { display: flex; flex-direction: column; gap: 0.35rem; font-size: 1rem; color: var(--text); }
+input, select, textarea {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text);
+  padding: 0.6rem 0.6rem;
+  font-family: var(--font-body);
+  font-size: 1rem; /* >=16px: evita zoom automático en iOS y es el mínimo legible en mobile */
+  min-height: 44px;
+}
+
+/* radios/checkboxes van en fila (icono + texto), no apilados como un
+   input de texto — el label de columna de arriba es para "texto arriba,
+   input abajo", no aplica a opciones seleccionables */
+.radio-group { display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 0.6rem; }
+.radio-option {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.6rem;
+  min-height: 44px; /* tap target mínimo */
+  color: var(--text);
+  cursor: pointer;
+}
+.radio-option input[type="radio"] {
+  width: 20px;
+  height: 20px;
+  min-height: 0;
+  margin: 0;
+  accent-color: var(--accent);
+  flex-shrink: 0;
+}
+
+button[type="submit"] {
+  font-family: var(--font-display);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: 0.85rem;
+  background: var(--accent);
+  color: var(--accent-text);
+  border: none;
+  border-radius: 4px;
+  padding: 0.85rem 1rem;
+  min-height: 52px; /* CTA primario: alto mínimo recomendado */
+  cursor: pointer;
+  width: 100%;
+}
+button[type="submit"]:hover { background: var(--accent-dim); }
+button[type="submit"]:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* CTA secundario: mismo alto que el primario, sin relleno — nunca un
+   <button> sin clase (queda con el estilo default feo del navegador) */
+.btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-size: 0.75rem;
+  background: transparent;
+  color: var(--accent);
+  border: 1px solid var(--accent);
+  border-radius: 4px;
+  padding: 0.6rem 0.9rem;
+  min-height: 44px;
+  cursor: pointer;
+}
+.btn-secondary:hover { background: rgba(52, 215, 192, 0.12); }
+
+/* texto informativo: siempre más chico que el texto que se escribe/lee
+   como dato, corto, sin párrafos largos */
+.hint { font-size: 0.8125rem; line-height: 1.4; color: var(--text-dim); margin: 0.3rem 0 0; }
+.ok { color: var(--signal-excelente); }
+.error { color: var(--signal-pobre); }
+
+/* ============ toast (confirmación de acción / error) ============ */
+#toast-container {
+  position: fixed;
+  left: 50%;
+  bottom: 1.25rem;
+  transform: translateX(-50%);
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  width: min(92vw, 420px);
+  pointer-events: none;
+}
+.toast {
+  padding: 0.85rem 1rem;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-align: center;
+  color: var(--accent-text);
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 200ms ease, transform 200ms ease;
+  box-shadow: var(--shadow-md, 0 4px 16px rgba(0, 0, 0, 0.4));
+}
+.toast--show { opacity: 1; transform: translateY(0); }
+.toast--success { background: var(--signal-excelente); }
+.toast--error { background: var(--signal-pobre); color: #2a0b06; }
 table { width: 100%; border-collapse: collapse; margin: 1rem; }
-th, td { border: 1px solid #ddd; padding: 0.5rem; text-align: left; font-size: 0.9rem; }
+th, td { border: 1px solid var(--border); padding: 0.5rem; text-align: left; font-size: 0.9rem; color: var(--text); }
+th { font-family: var(--font-display); font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-dim); }
+
+/* ============ mobile-first: topbar colapsa en pantallas angostas ============ */
+@media (max-width: 640px) {
+  .topbar { padding: 0.5rem 0.75rem; }
+  .brand { font-size: 0.9rem; }
+  .topbar nav a, .topbar nav button, .btn { font-size: 0.65rem; padding: 0.4rem 0.55rem; }
+  .legend { left: 0.6rem; right: 0.6rem; bottom: 0.9rem; }
+}

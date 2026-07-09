@@ -1,5 +1,6 @@
 ---
 import '../styles/global.css';
+import 'leaflet/dist/leaflet.css';
 ---
 <html lang="es">
 <head>
@@ -16,24 +17,43 @@ import '../styles/global.css';
     <form id="report-form">
       <fieldset>
         <legend>Ubicación</legend>
-        <label>
-          <input type="radio" name="input_method" value="coords" checked />
-          Coordenadas GPS
-        </label>
-        <label>
-          <input type="radio" name="input_method" value="pluscode" />
-          Plus Code
-        </label>
+        <div class="radio-group">
+          <label class="radio-option">
+            <input type="radio" name="input_method" value="coords" checked />
+            <span>Coordenadas GPS</span>
+          </label>
+          <label class="radio-option">
+            <input type="radio" name="input_method" value="pluscode" />
+            <span>Plus Code</span>
+          </label>
+          <label class="radio-option">
+            <input type="radio" name="input_method" value="mapclick" />
+            <span>Clic en el mapa</span>
+          </label>
+        </div>
 
         <div id="coords-fields">
           <label>Latitud <input type="number" step="any" id="lat" placeholder="7.1193" /></label>
           <label>Longitud <input type="number" step="any" id="lon" placeholder="-73.1227" /></label>
-          <button type="button" id="btn-geo">Usar mi ubicación actual</button>
+          <button type="button" id="btn-geo" class="btn-secondary">Usar mi ubicación</button>
         </div>
 
         <div id="pluscode-fields" hidden>
           <label>Plus Code <input type="text" id="plus_code" placeholder="p.ej. 869876XV+GX" /></label>
         </div>
+
+        <div id="mapclick-fields" hidden>
+          <div id="map-picker"></div>
+          <p id="picker-confirm" class="hint">Hacé clic en el mapa para elegir la ubicación.</p>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Identificación</legend>
+        <label>¿Quién reporta? (opcional)
+          <input type="text" id="reporter_display_name" placeholder="Anónimo" maxlength="60" />
+        </label>
+        <p class="hint">Solo lo verá el administrador al revisar tu reporte.</p>
       </fieldset>
 
       <fieldset>
@@ -46,71 +66,18 @@ import '../styles/global.css';
             <option value="excelente">Excelente</option>
           </select>
         </label>
-        <label>Mensaje (opcional)
-          <textarea id="message" rows="3" placeholder="Detalles adicionales..."></textarea>
+        <label>Observación (opcional)
+          <textarea id="message" rows="3" maxlength="120" placeholder="Detalles adicionales..."></textarea>
         </label>
+        <p id="message-count" class="hint">0/120</p>
       </fieldset>
 
-      <p class="hint">
-        Quién reporta y fecha se toman automáticamente de tu sesión. El reporte
-        queda <strong>pendiente de aprobación</strong> por un administrador antes
-        de aparecer en el mapa.
-      </p>
+      <p class="hint">Queda <strong>pendiente de aprobación</strong> antes de verse en el mapa.</p>
 
       <button type="submit">Enviar reporte</button>
-      <p id="form-status"></p>
     </form>
   </main>
 
-  <script type="module">
-    import { createReport } from '../lib/api.ts';
-
-    if (!localStorage.getItem('token')) {
-      window.location.href = '/login';
-    }
-
-    const radios = document.querySelectorAll('input[name="input_method"]');
-    radios.forEach((r) =>
-      r.addEventListener('change', () => {
-        const method = document.querySelector('input[name="input_method"]:checked').value;
-        document.getElementById('coords-fields').hidden = method !== 'coords';
-        document.getElementById('pluscode-fields').hidden = method !== 'pluscode';
-      })
-    );
-
-    document.getElementById('btn-geo').addEventListener('click', () => {
-      navigator.geolocation.getCurrentPosition((pos) => {
-        document.getElementById('lat').value = pos.coords.latitude;
-        document.getElementById('lon').value = pos.coords.longitude;
-      });
-    });
-
-    document.getElementById('report-form').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const status = document.getElementById('form-status');
-      const method = document.querySelector('input[name="input_method"]:checked').value;
-
-      const payload = {
-        signal_quality: document.getElementById('signal_quality').value,
-        message: document.getElementById('message').value,
-      };
-
-      if (method === 'coords') {
-        payload.lat = parseFloat(document.getElementById('lat').value);
-        payload.lon = parseFloat(document.getElementById('lon').value);
-      } else {
-        payload.plus_code = document.getElementById('plus_code').value;
-      }
-
-      try {
-        const res = await createReport(payload);
-        status.textContent = `Reporte enviado (celda ${res.h3_index}). Pendiente de aprobación.`;
-        status.className = 'ok';
-      } catch (err) {
-        status.textContent = `Error: ${err.message}`;
-        status.className = 'error';
-      }
-    });
-  </script>
+  <script src="../lib/reportPage.ts"></script>
 </body>
 </html>

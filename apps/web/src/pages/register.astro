@@ -12,28 +12,8 @@ import '../styles/global.css';
       <label>Contraseña (mín. 8 caracteres) <input type="password" id="password" minlength="8" required /></label>
       <button type="submit">Registrarme</button>
     </form>
-    <p id="status"></p>
   </main>
 
-  <script type="module">
-    import { register } from '../lib/api.ts';
-
-    document.getElementById('register-form').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const status = document.getElementById('status');
-      try {
-        const res = await register(
-          document.getElementById('email').value,
-          document.getElementById('password').value,
-          document.getElementById('display_name').value
-        );
-        localStorage.setItem('token', res.token);
-        localStorage.setItem('role', 'user');
-        window.location.href = '/';
-      } catch (err) {
-        status.textContent = `Error: ${err.message}`;
-      }
-    });
-  </script>
+  <script src="../lib/registerPage.ts"></script>
 </body>
 </html>

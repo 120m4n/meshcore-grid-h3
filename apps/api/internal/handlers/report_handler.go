@@ -3,6 +3,7 @@ package handlers
 import (
 	"database/sql"
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -54,6 +55,17 @@ func (h *ReportHandler) Create(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "no se pudo guardar el reporte"})
 		return
+	}
+
+	if in.ReporterDisplayName != nil {
+		if name := strings.TrimSpace(*in.ReporterDisplayName); name != "" {
+			// best-effort: si falla, el reporte ya quedó guardado igual;
+			// la revisión admin simplemente mostrará "Anónimo".
+			_, _ = h.DB.Exec(
+				`INSERT INTO report_display_names (report_id, display_name) VALUES (?, ?)`,
+				reportID, name,
+			)
+		}
 	}
 
 	c.JSON(http.StatusCreated, gin.H{

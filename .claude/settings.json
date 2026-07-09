@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(gofmt -l *)",
+      "Bash(go vet *)",
+      "Bash(docker version*)",
+      "Bash(otool *)",
+      "mcp__playwright__browser_snapshot",
+      "mcp__playwright__browser_console_messages",
+      "mcp__playwright__browser_take_screenshot",
+      "Bash(docker compose ps*)"
+    ]
+  }
+}
