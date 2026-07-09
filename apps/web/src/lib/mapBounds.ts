@@ -8,5 +8,5 @@ export const SANTANDER_BOUNDS: [[number, number], [number, number]] = [
   [8.35, -72.50], // noreste
 ];
 export const MIN_ZOOM = 9;
-export const MAX_ZOOM = 14;
+export const MAX_ZOOM = 17;
 export const H3_RESOLUTION = 8; // debe igualar H3_RESOLUTION del backend
