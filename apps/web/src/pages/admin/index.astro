@@ -5,11 +5,12 @@ import '../../styles/global.css';
 <head><meta charset="UTF-8" /><title>Moderación — MeshCore Santander</title></head>
 <body>
   <header class="topbar">
-    <h1>Reportes pendientes</h1>
+    <h1>Moderación</h1>
     <nav><a href="/">Volver al mapa</a></nav>
   </header>
 
   <main>
+    <h2>Reportes pendientes</h2>
     <table id="reports-table">
       <thead>
         <tr>
@@ -20,6 +21,17 @@ import '../../styles/global.css';
       <tbody></tbody>
     </table>
     <p id="status"></p>
+
+    <h2>Celdas activas</h2>
+    <table id="cells-table">
+      <thead>
+        <tr>
+          <th>Celda H3</th><th>Señal</th><th>Reportes</th><th>Última actualización</th><th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+    <p id="cells-status"></p>
   </main>
 
   <script src="../../lib/adminPage.ts"></script>
