@@ -177,6 +177,37 @@ textarea:focus-visible {
   flex-shrink: 0;
 }
 
+/* HUD de marca flotante sobre el mapa — siempre visible, no interactivo */
+.brand-overlay {
+  position: absolute;
+  z-index: 500;
+  right: 0.9rem;
+  bottom: 1.6rem;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: rgba(16, 29, 46, 0.92);
+  border: 1px solid var(--border-bright);
+  border-radius: 6px;
+  padding: 0.4rem 0.7rem;
+  backdrop-filter: blur(4px);
+  pointer-events: none;
+}
+.brand-overlay-icon {
+  width: 18px;
+  height: 18px;
+  color: var(--accent);
+  flex-shrink: 0;
+}
+.brand-overlay-text {
+  font-family: var(--font-display);
+  font-size: 0.8rem;
+  letter-spacing: 0.02em;
+  color: var(--text);
+  white-space: nowrap;
+}
+.brand-overlay-text strong { font-weight: 700; }
+
 /* popups Leaflet a tono con el panel oscuro */
 .leaflet-popup-content-wrapper {
   background: var(--surface-raised);

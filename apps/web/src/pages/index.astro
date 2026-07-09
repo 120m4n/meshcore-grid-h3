@@ -30,7 +30,16 @@ import 'leaflet/dist/leaflet.css';
     <div class="legend-row"><span class="legend-swatch" style="background:#2ecc71"></span>Excelente</div>
     <div class="legend-row"><span class="legend-swatch" style="background:#f1c40f"></span>Buena</div>
     <div class="legend-row"><span class="legend-swatch" style="background:#e74c3c"></span>Pobre</div>
-    <div class="legend-row" style="margin-top:0.35rem;opacity:0.75">Modo prueba temporal — clic en el mapa agrega una celda punteada; clic sobre ella la quita</div>
+  </div>
+
+  <div class="brand-overlay" aria-hidden="true">
+    <svg class="brand-overlay-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="12" cy="19" r="1.5" fill="currentColor" />
+      <path d="M8 15.5a5.5 5.5 0 0 1 8 0" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+      <path d="M5 12a10 10 0 0 1 14 0" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" opacity="0.75" />
+      <path d="M2 8.5a15 15 0 0 1 20 0" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" opacity="0.5" />
+    </svg>
+    <span class="brand-overlay-text"><strong>Mesh</strong>Core</span>
   </div>
 
   <script src="../lib/mapPage.ts"></script>
