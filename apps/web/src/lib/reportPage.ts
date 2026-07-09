@@ -1,7 +1,24 @@
 import L from 'leaflet';
+// ?url fuerza a Vite a devolver la URL cruda como string — sin el
+// sufijo, el plugin de assets de Astro envuelve el import en un objeto
+// {src, width, height, ...} y Leaflet termina pidiendo "[object Object]".
+import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png?url';
+import markerIcon from 'leaflet/dist/images/marker-icon.png?url';
+import markerShadow from 'leaflet/dist/images/marker-shadow.png?url';
 import { createReport } from './api.ts';
 import { CENTER, SANTANDER_BOUNDS, MIN_ZOOM, MAX_ZOOM } from './mapBounds.ts';
 import { showToast } from './toast.ts';
+
+// Vite reescribe las rutas de assets al bundlear — el _getIconUrl por
+// defecto de Leaflet asume rutas relativas al HTML servido y rompe en
+// build (404 de marker-icon-2x.png/marker-shadow.png). Se reconfigura
+// con las URLs ya resueltas por el bundler.
+delete (L.Icon.Default.prototype as unknown as { _getIconUrl?: unknown })._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: markerIcon2x,
+  iconUrl: markerIcon,
+  shadowUrl: markerShadow,
+});
 
 if (!localStorage.getItem('token')) {
   window.location.href = '/login';
