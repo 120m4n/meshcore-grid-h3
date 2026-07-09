@@ -1,4 +1,5 @@
-import { getPendingReports, reviewReport } from './api.ts';
+import { getPendingReports, reviewReport, getCells, deleteCell } from './api.ts';
+import { showToast } from './toast.ts';
 
 const token = localStorage.getItem('token');
 const role = localStorage.getItem('role');
@@ -46,4 +47,44 @@ tbody.addEventListener('click', async (e) => {
   }
 });
 
+const cellsTbody = document.querySelector('#cells-table tbody')!;
+const cellsStatus = document.getElementById('cells-status')!;
+
+async function loadCells() {
+  cellsTbody.innerHTML = '';
+  try {
+    const cells = await getCells();
+    cellsStatus.textContent = cells.length === 0 ? 'No hay celdas activas.' : '';
+    for (const cell of cells) {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${cell.h3_index}</td>
+        <td>${Math.round(cell.score_pct)}%</td>
+        <td>${cell.report_count}</td>
+        <td>${new Date(cell.last_report_at).toLocaleString('es-CO')}</td>
+        <td><button class="btn-danger" data-h3="${cell.h3_index}">Eliminar</button></td>`;
+      cellsTbody.appendChild(tr);
+    }
+  } catch (err: any) {
+    cellsStatus.textContent = `Error: ${err.message}`;
+  }
+}
+
+cellsTbody.addEventListener('click', async (e) => {
+  const btn = (e.target as HTMLElement).closest('button');
+  if (!btn) return;
+  const h3Index = btn.dataset.h3!;
+  if (!confirm(`¿Eliminar la celda ${h3Index} del mapa? Los reportes aprobados quedarán marcados como rechazados.`)) {
+    return;
+  }
+  try {
+    await deleteCell(h3Index);
+    showToast('Celda eliminada del mapa.', 'success');
+    loadCells();
+  } catch (err: any) {
+    showToast(err.message || 'No se pudo eliminar la celda.', 'error');
+  }
+});
+
 load();
+loadCells();
