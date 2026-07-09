@@ -2,7 +2,7 @@ import L from 'leaflet';
 import { cellToBoundary, latLngToCell } from 'h3-js';
 import { getCells, getCellOrigins } from './api.ts';
 import { colorForScore } from './colors.ts';
-import { CENTER, SANTANDER_BOUNDS, H3_RESOLUTION } from './mapBounds.ts';
+import { CENTER, SANTANDER_BOUNDS, MIN_ZOOM, MAX_ZOOM, H3_RESOLUTION } from './mapBounds.ts';
 
 const map = L.map('map', {
   center: CENTER,
@@ -10,8 +10,8 @@ const map = L.map('map', {
   // zoom 11 ocupa unos pocos píxeles — se ve como un punto oscuro
   // indistinguible en vez de un hexágono de color.
   zoom: 13,
-  minZoom: 9,
-  maxZoom: 14,
+  minZoom: MIN_ZOOM,
+  maxZoom: MAX_ZOOM,
   maxBounds: SANTANDER_BOUNDS,
   maxBoundsViscosity: 1.0,
 });

@@ -1,6 +1,6 @@
 import L from 'leaflet';
 import { createReport } from './api.ts';
-import { CENTER, SANTANDER_BOUNDS } from './mapBounds.ts';
+import { CENTER, SANTANDER_BOUNDS, MIN_ZOOM, MAX_ZOOM } from './mapBounds.ts';
 import { showToast } from './toast.ts';
 
 if (!localStorage.getItem('token')) {
@@ -42,8 +42,8 @@ function ensurePickerMap() {
   pickerMap = L.map('map-picker', {
     center: CENTER,
     zoom: 11,
-    minZoom: 9,
-    maxZoom: 14,
+    minZoom: MIN_ZOOM,
+    maxZoom: MAX_ZOOM,
     maxBounds: SANTANDER_BOUNDS,
     maxBoundsViscosity: 1.0,
   });
