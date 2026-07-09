@@ -82,3 +82,13 @@ type CreateReportInput struct {
 	SignalQuality       SignalQuality `json:"signal_quality" binding:"required,oneof=sin_cobertura debil buena excelente"`
 	Message             string        `json:"message" binding:"max=120"`
 }
+
+// CellOrigin es un área de plus code (nivel 10, ~13m) que originó uno
+// o más reportes aprobados de una celda H3 — ver CellHandler.Origins.
+type CellOrigin struct {
+	PlusCode string  `json:"plus_code"`
+	LatLo    float64 `json:"lat_lo"`
+	LatHi    float64 `json:"lat_hi"`
+	LngLo    float64 `json:"lng_lo"`
+	LngHi    float64 `json:"lng_hi"`
+}

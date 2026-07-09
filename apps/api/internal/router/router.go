@@ -32,6 +32,7 @@ func New(db *sql.DB, cfg config.Config) *gin.Engine {
 		v1.POST("/auth/register", authH.Register)
 		v1.POST("/auth/login", authH.Login)
 		v1.GET("/cells", cellH.List)
+		v1.GET("/cells/:h3_index/origins", cellH.Origins)
 
 		authed := v1.Group("")
 		authed.Use(middleware.RequireAuth(cfg.JWTSecret))
