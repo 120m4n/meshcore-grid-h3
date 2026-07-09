@@ -73,3 +73,7 @@ export function reviewReport(id: string, status: 'approved' | 'rejected') {
     body: JSON.stringify({ status }),
   });
 }
+
+export function deleteCell(h3Index: string) {
+  return apiFetch(`/api/v1/admin/cells/${h3Index}`, { method: 'DELETE' });
+}
