@@ -123,28 +123,43 @@ y volver a loguearse después del `docker restart` para que el JWT lleve
    activas" ni en el mapa (a menos que ya tuviera otros reportes
    aprobados).
 
-## 4. Mapa público — capas base y celdas de prueba
+## 4. Mapa público — capas base
 
 Ir a http://localhost:8081/ (sin login necesario).
 
-1. **Esperado al cargar:** mapa centrado en Bucaramanga, capa base
-   oscura (CartoDB dark) activa por defecto, con selector de capas
-   (ícono superior derecho) que permite cambiar a OSM claro.
+1. **Esperado al cargar:** mapa centrado en el extent de las celdas
+   reales (o en Bucaramanga si no hay ninguna), capa base oscura
+   (CartoDB dark) activa por defecto, con selector de capas (ícono
+   superior derecho) que permite cambiar a OSM claro.
 2. Click en una celda coloreada (reporte aprobado de la sección 3).
 3. **Esperado:** popup informativo con el score de la celda.
-4. Click en un punto vacío del mapa (zoom ≥13 recomendado para ver los
+4. **Esperado:** sin sesión de admin, no hay botón "Limpiar pruebas" en
+   el nav y click en un punto vacío del mapa no dibuja ninguna celda
+   punteada — el modo prueba está restringido a admin (ver sección 4b).
+
+## 4b. Celdas de prueba (solo admin)
+
+Requiere estar logueado con la cuenta de prueba ya promovida a admin
+(ver "Credenciales" arriba).
+
+1. Loguearse y entrar a http://localhost:8081/.
+2. **Esperado:** aparece el botón "Limpiar pruebas" en el nav.
+3. Click en un punto vacío del mapa (zoom ≥13 recomendado para ver los
    hexágonos con claridad).
-5. **Esperado:** se dibuja una celda punteada de "prueba" (borde teal,
+4. **Esperado:** se dibuja una celda punteada de "prueba" (borde teal,
    `dashArray`), NO afecta el backend.
-6. Click de nuevo sobre esa misma celda punteada.
-7. **Esperado:** la celda de prueba desaparece.
-8. Crear 2-3 celdas de prueba más, luego click **Actualizar mapa**.
-9. **Esperado:** todas las celdas de prueba se limpian Y se recargan
+5. Click de nuevo sobre esa misma celda punteada.
+6. **Esperado:** la celda de prueba desaparece.
+7. Crear 2-3 celdas de prueba más, luego click **Actualizar mapa**.
+8. **Esperado:** todas las celdas de prueba se limpian Y se recargan
    las celdas reales desde el backend.
-10. Crear una celda de prueba y click **Limpiar pruebas** (sin tocar
-    Actualizar mapa).
-11. **Esperado:** solo desaparecen las celdas de prueba; las reales
+9. Crear una celda de prueba y click **Limpiar pruebas** (sin tocar
+   Actualizar mapa).
+10. **Esperado:** solo desaparecen las celdas de prueba; las reales
     (si había alguna cargada) no se ven afectadas.
+11. Cerrar sesión y volver a http://localhost:8081/.
+12. **Esperado:** el botón "Limpiar pruebas" ya no aparece y click en
+    un punto vacío del mapa no crea ninguna celda punteada.
 
 ## 5. Eliminar una celda activa (feature nueva)
 
