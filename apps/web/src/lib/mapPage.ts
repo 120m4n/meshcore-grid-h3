@@ -49,6 +49,7 @@ async function loadCells() {
   realIndexes.clear();
   try {
     const cells = await getCells();
+    let bounds: L.LatLngBounds | null = null;
     for (const cell of cells) {
       realIndexes.add(cell.h3_index);
       const boundary = cellToBoundary(cell.h3_index); // [[lat,lon], ...]
@@ -71,6 +72,13 @@ async function loadCells() {
         L.DomEvent.stopPropagation(e);
         showCellOrigins(cell.h3_index);
       });
+
+      bounds = bounds ? bounds.extend(polygon.getBounds()) : polygon.getBounds();
+    }
+    // sin celdas reales no hay extent que calcular — se deja la vista
+    // actual tal cual, en vez de saltar al CENTER por defecto.
+    if (bounds) {
+      map.fitBounds(bounds, { padding: [24, 24] });
     }
   } catch (err) {
     console.error('Error cargando celdas:', err);
