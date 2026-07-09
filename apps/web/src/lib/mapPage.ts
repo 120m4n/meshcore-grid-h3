@@ -4,6 +4,9 @@ import { getCells, getCellOrigins } from './api.ts';
 import { colorForScore } from './colors.ts';
 import { CENTER, SANTANDER_BOUNDS, MIN_ZOOM, MAX_ZOOM, H3_RESOLUTION } from './mapBounds.ts';
 
+const token = localStorage.getItem('token');
+const isAdmin = localStorage.getItem('role') === 'admin';
+
 const map = L.map('map', {
   center: CENTER,
   // zoom 13, no 11: una celda H3 resolución 8 mide ~460m de lado y a
@@ -178,29 +181,32 @@ function clearTestCells() {
   renderAllTestCells();
 }
 
-map.on('click', (e: L.LeafletMouseEvent) => {
-  const h3Index = latLngToCell(e.latlng.lat, e.latlng.lng, H3_RESOLUTION);
-  if (realIndexes.has(h3Index)) return; // no pisar datos reales aprobados
-  const isTestCell = loadTestCells().some((c) => c.h3_index === h3Index);
-  if (isTestCell) {
-    removeTestCell(h3Index);
-  } else {
-    addTestCell(h3Index);
-  }
-});
+// Celdas de prueba: solo interactivas/visibles para admin.
+if (isAdmin) {
+  map.on('click', (e: L.LeafletMouseEvent) => {
+    const h3Index = latLngToCell(e.latlng.lat, e.latlng.lng, H3_RESOLUTION);
+    if (realIndexes.has(h3Index)) return; // no pisar datos reales aprobados
+    const isTestCell = loadTestCells().some((c) => c.h3_index === h3Index);
+    if (isTestCell) {
+      removeTestCell(h3Index);
+    } else {
+      addTestCell(h3Index);
+    }
+  });
+  document.getElementById('btn-clear-test')!.hidden = false;
+  document.getElementById('btn-clear-test')!.addEventListener('click', clearTestCells);
+  renderAllTestCells();
+}
 
 document.getElementById('btn-refresh')!.addEventListener('click', () => {
-  clearTestCells();
+  if (isAdmin) clearTestCells();
   loadCells();
 });
-document.getElementById('btn-clear-test')!.addEventListener('click', clearTestCells);
 loadCells();
-renderAllTestCells();
 
 // Mostrar/ocultar nav según sesión
-const token = localStorage.getItem('token');
-const role = localStorage.getItem('role');
 if (token) {
+  document.getElementById('nav-report')!.hidden = false;
   const navLogin = document.getElementById('nav-login')!;
   navLogin.textContent = 'Salir';
   navLogin.addEventListener('click', (e) => {
@@ -209,6 +215,6 @@ if (token) {
     location.reload();
   });
 }
-if (role === 'admin') {
+if (isAdmin) {
   document.getElementById('nav-admin')!.hidden = false;
 }
