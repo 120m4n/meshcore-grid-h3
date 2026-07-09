@@ -77,3 +77,15 @@ export function reviewReport(id: string, status: 'approved' | 'rejected') {
 export function deleteCell(h3Index: string) {
   return apiFetch(`/api/v1/admin/cells/${h3Index}`, { method: 'DELETE' });
 }
+
+export interface CellOrigin {
+  plus_code: string;
+  lat_lo: number;
+  lat_hi: number;
+  lng_lo: number;
+  lng_hi: number;
+}
+
+export function getCellOrigins(h3Index: string): Promise<CellOrigin[]> {
+  return apiFetch(`/api/v1/cells/${h3Index}/origins`);
+}
