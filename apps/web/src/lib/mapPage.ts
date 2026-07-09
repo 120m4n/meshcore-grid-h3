@@ -1,6 +1,6 @@
 import L from 'leaflet';
 import { cellToBoundary, latLngToCell } from 'h3-js';
-import { getCells } from './api.ts';
+import { getCells, getCellOrigins } from './api.ts';
 import { colorForScore } from './colors.ts';
 import { CENTER, SANTANDER_BOUNDS, H3_RESOLUTION } from './mapBounds.ts';
 
@@ -40,10 +40,12 @@ map.setMaxBounds(SANTANDER_BOUNDS);
 
 let cellLayer = L.layerGroup().addTo(map);
 let testLayer = L.layerGroup().addTo(map);
+let originsLayer = L.layerGroup().addTo(map);
 const realIndexes = new Set<string>();
 
 async function loadCells() {
   cellLayer.clearLayers();
+  originsLayer.clearLayers();
   realIndexes.clear();
   try {
     const cells = await getCells();
@@ -65,10 +67,31 @@ async function loadCells() {
       `);
       // evitar que el clic sobre una celda real también dispare el
       // creador/eliminador de celdas de prueba del mapa
-      polygon.on('click', (e) => L.DomEvent.stopPropagation(e));
+      polygon.on('click', (e) => {
+        L.DomEvent.stopPropagation(e);
+        showCellOrigins(cell.h3_index);
+      });
     }
   } catch (err) {
     console.error('Error cargando celdas:', err);
+  }
+}
+
+async function showCellOrigins(h3Index: string) {
+  originsLayer.clearLayers();
+  try {
+    const origins = await getCellOrigins(h3Index);
+    for (const origin of origins) {
+      L.rectangle(
+        [
+          [origin.lat_lo, origin.lng_lo],
+          [origin.lat_hi, origin.lng_hi],
+        ],
+        { color: '#34d7c0', weight: 2, fillOpacity: 0.25 }
+      ).addTo(originsLayer);
+    }
+  } catch (err) {
+    console.error('Error cargando orígenes de la celda:', err);
   }
 }
 
