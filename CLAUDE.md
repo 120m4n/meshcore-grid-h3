@@ -66,6 +66,14 @@ el host a una conexión ya abierta dentro del contenedor. `docker restart
 infra-api-1` (o `docker compose restart api`) fuerza a reabrir el
 archivo y ver el cambio.
 
+Esta misma inconsistencia se observó una vez justo después de un
+`docker restart infra-api-1` en una ruta de escritura normal de la API
+(no solo en un `UPDATE` hecho desde el host): la primera petición
+devolvió 500 y la segunda, idéntica, funcionó. No es exclusivo del flujo
+de promoción de admin — si una escritura falla inmediatamente después de
+un restart del contenedor `api`, reintentar antes de asumir un bug de
+lógica.
+
 ### nginx: rutas limpias necesitan `apps/web/nginx.conf` propio
 
 Astro genera cada página como carpeta (`/login/index.html`,
