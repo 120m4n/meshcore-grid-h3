@@ -24,8 +24,8 @@ func ResolveLatLon(lat, lon *float64, plusCode *string) (float64, float64, error
 		if err != nil {
 			return 0, 0, err
 		}
-		center := area.Center()
-		return center.Lat, center.Lng, nil
+		lat, lng := area.Center()
+		return lat, lng, nil
 	}
 	return 0, 0, ErrInvalidInput
 }
@@ -39,9 +39,9 @@ func CellFromLatLon(lat, lon float64, resolution int) string {
 
 // CellBoundary retorna los vértices del hexágono (lat,lon) para uso interno.
 func CellBoundary(h3Index string) ([][2]float64, error) {
-	cell, err := h3.NewCellFromString(h3Index)
-	if err != nil {
-		return nil, err
+	cell := h3.Cell(h3.IndexFromString(h3Index))
+	if !cell.IsValid() {
+		return nil, fmt.Errorf("índice H3 inválido: %s", h3Index)
 	}
 	boundary := cell.Boundary()
 	points := make([][2]float64, 0, len(boundary))
