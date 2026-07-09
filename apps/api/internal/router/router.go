@@ -17,7 +17,7 @@ func New(db *sql.DB, cfg config.Config) *gin.Engine {
 
 	r.Use(cors.New(cors.Config{
 		AllowAllOrigins: true, // ajustar a dominio real del frontend en producción
-		AllowMethods:    []string{"GET", "POST", "PATCH", "OPTIONS"},
+		AllowMethods:    []string{"GET", "POST", "PATCH", "DELETE", "OPTIONS"},
 		AllowHeaders:    []string{"Origin", "Content-Type", "Authorization"},
 		MaxAge:          12 * time.Hour,
 	}))
@@ -45,6 +45,7 @@ func New(db *sql.DB, cfg config.Config) *gin.Engine {
 				admin.GET("/reports", adminH.ListReports)
 				admin.PATCH("/reports/:id", adminH.ReviewReport)
 				admin.GET("/export.csv", adminH.ExportCSV)
+				admin.DELETE("/cells/:h3_index", adminH.DeleteCell)
 			}
 		}
 	}

@@ -158,6 +158,39 @@ func recomputeCellAggregate(sqlDB *sql.DB, h3Index string) error {
 	return err
 }
 
+// DeleteCell revoca todos los reportes aprobados de una celda H3,
+// dejándola sin reportes aprobados. recomputeCellAggregate se encarga
+// de borrar la fila de cell_agg cuando el conteo llega a 0 — mismo
+// mecanismo que ya dispara ReviewReport, sin lógica de agregación nueva.
+func (h *AdminHandler) DeleteCell(c *gin.Context) {
+	h3Index := c.Param("h3_index")
+	adminID, _ := c.Get("user_id")
+
+	res, err := h.DB.Exec(`
+		UPDATE reports
+		SET status = 'rejected', reviewed_by = ?, reviewed_at = datetime('now')
+		WHERE h3_index = ? AND status = 'approved'`, adminID, h3Index)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "no se pudo revocar los reportes de la celda"})
+		return
+	}
+	n, _ := res.RowsAffected()
+	if n == 0 {
+		c.JSON(http.StatusNotFound, gin.H{"error": "no hay celda activa con ese h3_index"})
+		return
+	}
+
+	if err := recomputeCellAggregate(h.DB, h3Index); err != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"h3_index": h3Index, "reports_revoked": n,
+			"warning": "reportes revocados, pero falló el recálculo de la celda: " + err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"h3_index": h3Index, "reports_revoked": n})
+}
+
 // ExportCSV expone cell_agg como CSV con una columna WKT, para que
 // alguien que realmente necesite verlo en QGIS use
 // "Añadir capa de texto delimitado" con esa columna como geometría.
