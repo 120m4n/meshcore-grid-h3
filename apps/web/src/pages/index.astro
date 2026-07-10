@@ -1,11 +1,12 @@
 ---
-import '../styles/global.css';
 import 'leaflet/dist/leaflet.css';
+import '../styles/global.css';
 ---
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   <title>Mapa de disponibilidad MeshCore — Santander</title>
 </head>
 <body>
@@ -18,6 +19,7 @@ import 'leaflet/dist/leaflet.css';
       <a href="/reportar" class="btn-primary" id="nav-report" hidden>Reportar conectividad</a>
       <a href="/login" id="nav-login">Ingresar</a>
       <a href="/admin" id="nav-admin" hidden>Admin</a>
+      <button id="btn-enable-test" hidden>Activar modo prueba</button>
       <button id="btn-clear-test" hidden>Limpiar pruebas</button>
       <button id="btn-refresh">Actualizar mapa</button>
     </nav>

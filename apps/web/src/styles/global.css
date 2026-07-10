@@ -37,8 +37,15 @@ html, body {
   color: var(--text);
 }
 
+a { color: var(--accent); }
+a:hover { color: var(--accent-dim); }
+
 /* ============ topbar ============ */
 .topbar {
+  position: relative;
+  z-index: 0; /* crea stacking context propio: sin esto, el z-index:-1
+    del watermark escapa al contexto raíz y queda detrás de <body> */
+  overflow: hidden;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -48,6 +55,30 @@ html, body {
   border-bottom: 1px solid var(--border);
   color: var(--text);
   flex-wrap: wrap;
+}
+
+/* watermark de grilla hexagonal — la unidad de dato real del producto
+   (celda H3), reutilizado como textura de marca en vez de un adorno
+   genérico. Sutil a propósito: nunca debe competir con el texto. */
+.topbar::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='52' viewBox='0 0 60 52'%3E%3Cpath d='M40 26L35 34.66L25 34.66L20 26L25 17.34L35 17.34Z' fill='none' stroke='%23345070' stroke-width='1'/%3E%3C/svg%3E");
+  opacity: 0.6;
+}
+
+/* h1 de página (login/registro/reportar/admin) — mismo tratamiento
+   tipográfico que .brand en el mapa, para que la identidad no
+   desaparezca en cuanto se sale de "/". */
+.topbar h1 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--text);
 }
 
 .brand {
@@ -208,7 +239,11 @@ textarea:focus-visible {
 }
 .brand-overlay-text strong { font-weight: 700; }
 
-/* popups Leaflet a tono con el panel oscuro */
+/* popups, zoom y selector de capas de Leaflet a tono con el panel
+   oscuro — requiere que 'leaflet/dist/leaflet.css' se importe ANTES
+   que este archivo en cada .astro (índice y reportar): mismo
+   selector + misma especificidad, el minificador descarta el que
+   quede primero en el orden de imports. */
 .leaflet-popup-content-wrapper {
   background: var(--surface-raised);
   color: var(--text);
@@ -252,6 +287,22 @@ textarea:focus-visible {
 }
 .leaflet-control-layers-separator { border-color: var(--border); }
 
+/* ícono del selector de capas: reemplaza el sprite PNG negro/blanco
+   default de Leaflet (no recoloreable por CSS) por dos hexágonos
+   propios en teal — mismo motivo que el favicon y el watermark del
+   topbar, en vez del ícono genérico de "pila de cuadrados". La regla
+   .leaflet-retina tiene mayor especificidad que .leaflet-control-layers-toggle
+   sola, así que necesita su propio override o el sprite @2x de Leaflet
+   gana en pantallas retina. */
+.leaflet-control-layers-toggle,
+.leaflet-retina .leaflet-control-layers-toggle {
+  background-color: var(--surface-raised);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 22 22'%3E%3Cpath d='M8 3L13 6L8 9L3 6Z' fill='none' stroke='%2334d7c0' stroke-width='1.3' opacity='0.55'/%3E%3Cpath d='M14 9L19 12L14 15L9 12Z' fill='%2334d7c0' stroke='%2334d7c0' stroke-width='1'/%3E%3C/svg%3E");
+  background-size: 20px 20px;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
 /* ============ mini-mapa selector de ubicación (reportar) ============ */
 #map-picker {
   height: 260px;
@@ -270,7 +321,10 @@ textarea:focus-visible {
   gap: 0.75rem;
 }
 .form-container form { display: flex; flex-direction: column; gap: 0.75rem; }
-.form-container h1 { font-family: var(--font-display); font-size: 1.2rem; letter-spacing: 0.01em; }
+/* [hidden] pierde contra ".form-container form" (misma especificidad,
+   pero la regla de arriba viene después en cascada) sin este override
+   — un <form hidden> dentro de .form-container quedaba visible igual. */
+.form-container form[hidden] { display: none; }
 fieldset { border: 1px solid var(--border); border-radius: 6px; }
 legend {
   font-family: var(--font-display);
@@ -408,6 +462,22 @@ button[type="submit"]:disabled { opacity: 0.5; cursor: not-allowed; }
 .toast--show { opacity: 1; transform: translateY(0); }
 .toast--success { background: var(--signal-excelente); }
 .toast--error { background: var(--signal-pobre); color: #2a0b06; }
+/* encabezado de sección (ej. "Reportes pendientes" en /admin) — mismo
+   lenguaje visual que .legend-title en el mapa: uppercase, monospace,
+   dim, con línea divisoria en vez de un <h2> default del navegador. */
+.section-title {
+  margin: 1.75rem 0 0.6rem;
+  padding-bottom: 0.4rem;
+  border-bottom: 1px solid var(--border);
+  font-family: var(--font-display);
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-dim);
+}
+.section-title:first-of-type { margin-top: 1.25rem; }
+
 table { width: 100%; border-collapse: collapse; margin: 1rem; }
 th, td { border: 1px solid var(--border); padding: 0.5rem; text-align: left; font-size: 0.9rem; color: var(--text); }
 th { font-family: var(--font-display); font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-dim); }
