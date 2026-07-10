@@ -25,14 +25,26 @@ Desktop/macOS — reintentar antes de asumir que algo está roto (ver
 
 ## Credenciales de la cuenta de prueba
 
-No existe ninguna cuenta admin por defecto — se crea a mano. Usá esta
-cuenta de prueba documentada para todo el flujo de abajo:
+No existe ninguna cuenta admin por defecto — se crea a mano. El
+registro es **solo por invitación** (código de 8 caracteres, un solo
+uso, vence a las 72h) — no hay walk-in signup. Para el primerísimo
+usuario del sistema (todavía no existe ningún admin que genere un
+código), se inserta uno a mano una sola vez:
+
+```bash
+sqlite3 infra/data/meshcore.db \
+  "INSERT INTO invite_codes (code, created_by, expires_at)
+   VALUES ('BOOTSTRAP', 'system', datetime('now', '+1 day'));"
+```
+
+Usá esta cuenta de prueba documentada para todo el flujo de abajo:
 
 | Campo | Valor |
 |---|---|
 | Email | `plantest@example.com` |
 | Contraseña | `TestPass123!` |
 | Nombre a mostrar | `Plan Test` |
+| Código de invitación (solo el primer registro) | `BOOTSTRAP` |
 
 Para promoverla a admin (una sola vez, después de registrarla en la
 sección 1):
@@ -44,25 +56,48 @@ docker restart infra-api-1
 ```
 
 El `docker restart` es obligatorio — sin él, el login puede seguir
-devolviendo el rol viejo (ver nota de bind-mount en `CLAUDE.md`).
+devolviendo el rol viejo (ver nota de bind-mount en `CLAUDE.md`). Una
+vez que `plantest@example.com` es admin, ya puede generar sus propios
+códigos desde `/admin` (sección 6) para registrar cuentas nuevas — no
+hace falta repetir el insert manual.
 
 ---
 
-## 1. Registro y login
+## 1. Registro (código de invitación) y login
 
 1. Ir a http://localhost:8081/register.
-2. Completar nombre a mostrar `Plan Test`, email
+2. **Esperado:** solo se ve un campo "Código de invitación" y el botón
+   "Validar código" — los campos de cuenta (nombre/email/contraseña)
+   están ocultos.
+3. Ingresar un código inventado (ej. `XXXXXXXX`) → **Validar código**.
+4. **Esperado:** toast rojo de error ("código inválido"), los campos de
+   cuenta siguen ocultos.
+5. Ingresar `BOOTSTRAP` (o el código real generado desde `/admin` si ya
+   existe un admin) → **Validar código**.
+6. **Esperado:** el paso 1 desaparece, aparecen los campos nombre a
+   mostrar / email / contraseña.
+7. Completar nombre a mostrar `Plan Test`, email
    `plantest@example.com`, contraseña `TestPass123!` (mín. 8
    caracteres) → **Registrarme**.
-3. **Esperado:** redirige a `/` automáticamente logueado; el nav
+8. **Esperado:** redirige a `/` automáticamente logueado; el nav
    muestra "Ingresar" reemplazado o el link "Admin" sigue oculto (todavía
    no es admin).
-4. Cerrar sesión manualmente (borrar `localStorage` desde devtools, o ir
+9. Intentar registrar una segunda cuenta reusando el mismo código ya
+   consumido.
+10. **Esperado:** toast rojo "código de invitación ya utilizado" (o,
+    si se llega a probar el mismo código en dos pestañas a la vez, solo
+    uno de los dos registros prospera — el otro debe fallar igual, sin
+    crear una cuenta duplicada ni dejar el código "medio usado").
+11. Cerrar sesión manualmente (borrar `localStorage` desde devtools, o ir
    a `/login` directo) y volver a entrar en http://localhost:8081/login
    con el mismo email/contraseña.
-5. **Esperado:** login exitoso, redirige a `/`.
-6. Probar con contraseña incorrecta.
-7. **Esperado:** toast rojo de error, sin redirigir.
+12. **Esperado:** login exitoso, redirige a `/`.
+13. Probar con contraseña incorrecta.
+14. **Esperado:** toast rojo de error, sin redirigir.
+15. Probar 6 intentos de login seguidos con contraseña incorrecta.
+16. **Esperado:** a partir del 6to (rate limit de auth: 10/hora, ráfaga
+    5), toast "demasiadas solicitudes, esperá un momento" en vez del
+    error de credenciales — confirma que el rate limiting está activo.
 
 ## 2. Enviar un reporte — los 3 métodos de ubicación
 
@@ -123,6 +158,31 @@ y volver a loguearse después del `docker restart` para que el JWT lleve
    activas" ni en el mapa (a menos que ya tuviera otros reportes
    aprobados).
 
+## 3b. Generar códigos de invitación (admin)
+
+Requiere la cuenta de prueba ya promovida a admin (misma sesión de la
+sección 3).
+
+1. En http://localhost:8081/admin, ubicar la tabla "Códigos de
+   invitación".
+2. **Esperado:** el código `BOOTSTRAP` usado en la sección 1 aparece
+   con estado "usado".
+3. Click **Generar código**.
+4. **Esperado:** toast verde "Código generado y copiado: XXXXXXXX", el
+   código aparece en la tabla con estado "activo", columna "Expira /
+   usado" mostrando una fecha ~72h en el futuro. Pegar el portapapeles
+   en algún lado confirma que efectivamente se copió.
+5. Abrir una pestaña de incógnito, ir a `/register`, pegar ese código.
+6. **Esperado:** valida OK, revela el form de cuenta (sección 1,
+   pasos 5-8).
+7. Completar el registro con ese código.
+8. **Esperado:** cuenta creada con éxito; volver a la tabla de
+   `/admin` (recargar) — el código ahora figura "usado".
+9. Intentar usar el mismo código de nuevo en otra pestaña de
+   incógnito.
+10. **Esperado:** falla con "código de invitación ya utilizado" en el
+    paso de validación previa (ni siquiera llega a mostrar el form).
+
 ## 4. Mapa público — capas base
 
 Ir a http://localhost:8081/ (sin login necesario).
@@ -151,15 +211,48 @@ Requiere estar logueado con la cuenta de prueba ya promovida a admin
 5. Click de nuevo sobre esa misma celda punteada.
 6. **Esperado:** la celda de prueba desaparece.
 7. Crear 2-3 celdas de prueba más, luego click **Actualizar mapa**.
-8. **Esperado:** todas las celdas de prueba se limpian Y se recargan
-   las celdas reales desde el backend.
+8. **Esperado:** si ya pasaron 45 min desde la última carga de celdas
+   (carga inicial de la página u otro "Actualizar mapa"), todas las
+   celdas de prueba se limpian Y se recargan las celdas reales desde el
+   backend. Si NO pasaron los 45 min (caso normal al probar esto en el
+   momento), aparece un toast rojo "El mapa ya está al día. Podés
+   actualizarlo de nuevo en N min." y NO se limpia nada ni se llama al
+   backend — ver sección 4c para forzar el caso "TTL vencido".
 9. Crear una celda de prueba y click **Limpiar pruebas** (sin tocar
    Actualizar mapa).
 10. **Esperado:** solo desaparecen las celdas de prueba; las reales
-    (si había alguna cargada) no se ven afectadas.
+    (si había alguna cargada) no se ven afectadas. "Limpiar pruebas" no
+    tiene TTL, siempre es inmediato (no toca el backend).
 11. Cerrar sesión y volver a http://localhost:8081/.
 12. **Esperado:** el botón "Limpiar pruebas" ya no aparece y click en
     un punto vacío del mapa no crea ninguna celda punteada.
+
+## 4c. TTL de "Actualizar mapa" (45 min)
+
+No es un mapa de navegación ni de eventos en tiempo real — la
+cobertura de una celda cambia en horas, no en segundos. El botón
+"Actualizar mapa" está limitado a una llamada real al backend cada 45
+minutos (persistido en `localStorage`, sobrevive a recargar la
+página) para no forzar al backend con clicks repetidos.
+
+1. Abrir http://localhost:8081/ (carga inicial ya cuenta como el
+   primer "fetch" del TTL).
+2. Click inmediato en **Actualizar mapa**.
+3. **Esperado:** toast rojo "El mapa ya está al día. Podés
+   actualizarlo de nuevo en 45 min." (o el minuto redondeado que
+   corresponda), sin request nueva a `GET /cells` (verificar en la
+   pestaña Network del navegador).
+4. Recargar la página (F5) y click en **Actualizar mapa** de nuevo.
+5. **Esperado:** sigue bloqueado — el TTL persiste entre recargas, no
+   se resetea.
+6. Para forzar el caso "TTL vencido" sin esperar 45 min, desde la
+   consola del navegador:
+   ```js
+   localStorage.setItem('meshcore:cells-last-fetch', String(Date.now() - 46 * 60 * 1000));
+   ```
+7. Click en **Actualizar mapa**.
+8. **Esperado:** esta vez sí dispara `GET /cells` y recarga las celdas
+   reales normalmente.
 
 ## 5. Eliminar una celda activa (feature nueva)
 
@@ -188,6 +281,44 @@ curl -s "http://localhost:8080/api/v1/admin/reports?status=rejected" \
 
 **Esperado:** el/los reporte(s) que sostenían esa celda aparecen con
 `"status":"rejected"` (no se borraron, solo cambiaron de estado).
+
+## 5b. Editar la señal de una celda a mano + filtrar por plus code (feature nueva)
+
+Requiere al menos una celda con reportes aprobados visible en "Celdas
+activas" (sección 3, paso 4).
+
+1. En http://localhost:8081/admin, ubicar la tabla "Celdas activas".
+2. **Esperado:** columna nueva "Plus code" junto a "Celda H3", con un
+   código tipo `869876XV+GX` (calculado del centro de la celda, no de
+   ningún reporte puntual).
+3. Escribir en "Filtrar por plus code" algo que no matchee ningún
+   código (ej. `ZZZZZZZZ`).
+4. **Esperado:** la tabla queda vacía (el filtro no toca el backend, es
+   sobre los datos ya cargados).
+5. Escribir solo los primeros 4-5 caracteres de un plus code real, en
+   minúsculas.
+6. **Esperado:** la fila correspondiente aparece igual (filtro parcial,
+   sin distinguir mayúsculas/minúsculas). Borrar el filtro.
+7. Click **Editar** en una fila.
+8. **Esperado:** la columna "Señal" se convierte en un input numérico
+   con el valor actual, "Acciones" pasa a mostrar "Guardar"/"Cancelar".
+9. Cambiar el número a algo distinto (ej. `30`) → **Guardar**.
+10. **Esperado:** toast verde "Señal actualizada.", la columna vuelve a
+    mostrar el número seguido de "(manual)", y aparece un botón nuevo
+    "Revertir a automático" en Acciones.
+11. Ir a http://localhost:8081/reportar y enviar+aprobar un reporte
+    nuevo para esa misma celda (cualquier calidad de señal).
+12. **Esperado:** al recargar `/admin`, "Reportes" subió en esa fila
+    (dato real), pero la "Señal" sigue en el valor fijado a mano del
+    paso 9 — el reporte nuevo NO la recalculó.
+13. Click **Revertir a automático** en esa fila.
+14. **Esperado:** diálogo de confirmación; al aceptar, toast verde
+    "Celda vuelta a cálculo automático.", "(manual)" y el botón
+    "Revertir" desaparecen, la señal pasa a reflejar el promedio real
+    de los reportes aprobados de esa celda.
+15. Click **Editar** → **Cancelar** (sin cambiar el número).
+16. **Esperado:** no pasa nada, la fila vuelve a su estado normal sin
+    llamar al backend.
 
 ## 6. Áreas de plus code al hacer click en una celda (feature nueva)
 

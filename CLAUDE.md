@@ -52,12 +52,28 @@ Levanta `api` (Go binario + volumen `./data` bind-mounted, DB en
 Las migraciones embebidas corren automáticamente al arrancar el backend
 (`internal/db/migrate.go`) — no hay paso manual de init de DB.
 
-Crear el primer admin (no existe endpoint de promoción, es deliberado):
+Crear el primer admin (no existe endpoint de promoción, es deliberado).
+El registro requiere un `invite_code` válido en `invite_codes` — para el
+primerísimo usuario, ese código no lo generó ningún admin (todavía no
+existe ninguno), así que se inserta a mano una sola vez:
+
+```bash
+sqlite3 infra/data/meshcore.db \
+  "INSERT INTO invite_codes (code, created_by, expires_at)
+   VALUES ('BOOTSTRAP', 'system', datetime('now', '+1 day'));"
+```
+
+Registrarse en `/register` con ese código (`BOOTSTRAP`, sin distinguir
+mayúsculas/minúsculas), y luego promoverlo:
 
 ```bash
 sqlite3 infra/data/meshcore.db \
   "UPDATE users SET role = 'admin' WHERE email = 'tu-email@dominio.com';"
 ```
+
+Cualquier admin generado a partir de ahí ya puede generar sus propios
+códigos desde `/admin` — no hace falta repetir el insert manual salvo
+para ese primer usuario.
 
 Si el contenedor `api` ya estaba corriendo cuando corriste el `UPDATE`, el
 login puede seguir devolviendo el rol viejo por un rato: el bind mount
@@ -100,11 +116,58 @@ inyecta `*sql.DB` y `config.Config` directo en cada handler (sin interfaces
 de repositorio ni capa de servicio separada). Los handlers hacen SQL
 inline con `database/sql`. Grupos de rutas en `/api/v1`:
 
-- Públicas: `POST /auth/register`, `POST /auth/login`, `GET /cells`.
+- Públicas: `POST /auth/register`, `POST /auth/login`,
+  `POST /auth/invite-codes/validate`, `GET /cells`.
 - Autenticadas (`middleware.RequireAuth`, JWT en header `Authorization: Bearer`):
   `GET /me`, `POST /reports`.
 - Admin (además `middleware.RequireAdmin`, chequea claim `role` del JWT):
-  `GET /admin/reports`, `PATCH /admin/reports/:id`, `GET /admin/export.csv`.
+  `GET /admin/reports`, `PATCH /admin/reports/:id`, `GET /admin/export.csv`,
+  `POST /admin/invite-codes`, `GET /admin/invite-codes`,
+  `PATCH /admin/cells/:h3_index/score`, `DELETE /admin/cells/:h3_index/score`.
+
+### Registro por invitación, no abierto
+
+`POST /auth/register` exige un `invite_code` válido (8 chars, un solo
+uso, TTL 72h) — no existe registro walk-in. `InviteHandler.Generate`
+(admin-only) crea códigos; `InviteHandler.Validate` (público) los
+pre-valida sin consumirlos, para que el form de `/register` muestre los
+campos de cuenta solo después de un código bueno. El consumo real pasa
+dentro de la misma transacción que el `INSERT INTO users` en
+`AuthHandler.Register` (`UPDATE ... WHERE used_at IS NULL`) — evita que
+dos registros concurrentes gasten el mismo código dos veces. Además hay
+un honeypot (`website`, campo oculto fuera de pantalla en el form real)
+y rate limiting por IP en memoria (`middleware.RateLimit`, sin Redis —
+pensado para un solo contenedor) sobre `/auth/*` y de forma más laxa
+sobre toda `/api/v1`. `WEB_ORIGIN` (env) reemplaza el viejo
+`AllowAllOrigins: true` de CORS; `WEB_ORIGIN=*` es el escape hatch
+explícito para dev local.
+
+### Override manual de `score_pct` por un admin — "fijado", no una escritura de una sola vez
+
+`PATCH /admin/cells/:h3_index/score` (`AdminHandler.UpdateCellScore`)
+deja que un admin corrija a mano la intensidad de señal mostrada de una
+celda (0-100%). No es un simple `UPDATE` puntual: la fila se guarda en
+`cell_overrides` (tabla nueva, no una columna en `cell_agg` — ver
+`0004_cell_overrides.sql`) y `recomputeCellAggregate` la respeta en
+cada recálculo posterior — aprobar/rechazar otro reporte de esa celda
+YA NO pisa el valor fijado, aunque sí sigue actualizando
+`report_count`/`last_report_at` con datos reales (son informativos, no
+lo que se está corrigiendo). `DELETE /admin/cells/:h3_index/score`
+borra el override y fuerza un recálculo inmediato — puede hacer
+desaparecer la celda del mapa si no le quedan reportes aprobados
+reales, mismo comportamiento que si nunca hubiera tenido override.
+
+### `plus_code` en `cell_agg`: calculado al servir, no una columna
+
+Cada fila de `GET /cells` incluye `plus_code` — el plus code (nivel 10)
+del **centro geográfico de la celda H3**, no el de ningún reporte en
+particular (una celda puede tener reportes aprobados en varias
+ubicaciones/plus codes distintos, ver `GET /cells/:h3/origins`, así que
+no hay un origen "canónico" entre ellos). Se calcula al vuelo en
+`CellHandler.List` vía `h3util.CellPlusCode` (puro, determinístico a
+partir del h3_index) — no vive en la tabla `cell_agg`. Es más fácil de
+recordar/tipear que un h3_index, así que la tabla "Celdas activas" de
+`/admin` lo usa como campo de filtro.
 
 ### El dato clave: `reports` (historial) vs `cell_agg` (materializada, lo que ve el público)
 
