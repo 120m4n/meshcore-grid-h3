@@ -30,6 +30,17 @@
 
 * { box-sizing: border-box; }
 
+/* fuera de pantalla pero presente en el DOM/layout (a diferencia de
+   display:none) — para el honeypot anti-bot del registro: algunos
+   bots ignoran campos con display:none, pocos revisan posición real. */
+.visually-hidden {
+  position: absolute;
+  left: -9999px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
 html, body {
   height: 100%;
   margin: 0;

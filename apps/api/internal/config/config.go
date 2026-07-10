@@ -10,6 +10,10 @@ type Config struct {
 	DBPath       string
 	JWTSecret    string
 	H3Resolution int
+	// WebOrigin restringe CORS al dominio real del frontend. "*" es un
+	// escape hatch explícito para dev local (equivale al viejo
+	// AllowAllOrigins) — no usar en producción.
+	WebOrigin string
 }
 
 func Load() Config {
@@ -22,6 +26,7 @@ func Load() Config {
 		DBPath:       getEnv("DB_PATH", "/data/meshcore.db"),
 		JWTSecret:    getEnv("JWT_SECRET", "change-me-in-production"),
 		H3Resolution: res,
+		WebOrigin:    getEnv("WEB_ORIGIN", "http://localhost:4321"),
 	}
 }
 

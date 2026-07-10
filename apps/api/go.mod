@@ -11,6 +11,7 @@ require (
 	github.com/mattn/go-sqlite3 v1.14.22
 	github.com/uber/h3-go/v4 v4.1.1
 	golang.org/x/crypto v0.24.0
+	golang.org/x/time v0.10.0
 )
 
 require (

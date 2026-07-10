@@ -42,11 +42,41 @@ export function login(email: string, password: string) {
   });
 }
 
-export function register(email: string, password: string, display_name: string) {
+export function register(
+  email: string,
+  password: string,
+  display_name: string,
+  invite_code: string,
+  website: string = '' // honeypot: siempre vacío en un envío humano real
+) {
   return apiFetch('/api/v1/auth/register', {
     method: 'POST',
-    body: JSON.stringify({ email, password, display_name }),
+    body: JSON.stringify({ email, password, display_name, invite_code, website }),
   });
+}
+
+export function validateInviteCode(code: string): Promise<{ valid: boolean }> {
+  return apiFetch('/api/v1/auth/invite-codes/validate', {
+    method: 'POST',
+    body: JSON.stringify({ code }),
+  });
+}
+
+export interface InviteCode {
+  code: string;
+  created_by: string;
+  created_at: string;
+  expires_at: string;
+  used_by?: string;
+  used_at?: string;
+}
+
+export function generateInviteCode(): Promise<InviteCode> {
+  return apiFetch('/api/v1/admin/invite-codes', { method: 'POST' });
+}
+
+export function listInviteCodes(): Promise<InviteCode[]> {
+  return apiFetch('/api/v1/admin/invite-codes');
 }
 
 export function createReport(input: {

@@ -2,7 +2,7 @@
 import '../styles/global.css';
 ---
 <html lang="es">
-<head><meta charset="UTF-8" /><title>Registro — MeshCore Santander</title></head>
+<head><meta charset="UTF-8" /><link rel="icon" type="image/svg+xml" href="/favicon.svg" /><title>Registro — MeshCore Santander</title></head>
 <body>
   <header class="topbar">
     <h1>Crear cuenta</h1>
@@ -10,10 +10,25 @@ import '../styles/global.css';
   </header>
 
   <main class="form-container">
-    <form id="register-form">
+    <form id="invite-form">
+      <label>Código de invitación
+        <input type="text" id="invite_code" maxlength="8" autocomplete="off" required
+               placeholder="p.ej. XK4P9QRT" />
+      </label>
+      <p class="hint">El registro es solo por invitación — pedile un código a un admin.</p>
+      <button type="submit">Validar código</button>
+    </form>
+
+    <form id="register-form" hidden>
       <label>Nombre a mostrar <input type="text" id="display_name" required /></label>
       <label>Email <input type="email" id="email" required /></label>
       <label>Contraseña (mín. 8 caracteres) <input type="password" id="password" minlength="8" required /></label>
+      <!-- honeypot: oculto por CSS (no `hidden`, algunos bots lo detectan) —
+           un humano nunca lo completa, un bot que rellena todos los
+           inputs del DOM sí. Ver AuthHandler.Register en el backend. -->
+      <label class="visually-hidden" aria-hidden="true">
+        Sitio web <input type="text" id="website" name="website" tabindex="-1" autocomplete="off" />
+      </label>
       <button type="submit">Registrarme</button>
     </form>
   </main>
