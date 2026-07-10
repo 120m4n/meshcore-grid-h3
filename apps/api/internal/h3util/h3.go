@@ -51,6 +51,22 @@ func CellBoundary(h3Index string) ([][2]float64, error) {
 	return points, nil
 }
 
+// CellPlusCode calcula el plus code (nivel 10, ~13m) del centro
+// geográfico de una celda H3 — no depende de ningún reporte real, es
+// puro y determinístico a partir del h3_index. Se usa como columna
+// "plus code" de cell_agg (más fácil de recordar/buscar que el
+// h3_index) en vez del plus code de un reporte específico, porque una
+// celda puede tener múltiples reportes en distintas ubicaciones (ver
+// CellHandler.Origins) y no hay un origen "canónico" entre ellos.
+func CellPlusCode(h3Index string) (string, error) {
+	cell := h3.Cell(h3.IndexFromString(h3Index))
+	if !cell.IsValid() {
+		return "", fmt.Errorf("índice H3 inválido: %s", h3Index)
+	}
+	center := cell.LatLng()
+	return olc.Encode(center.Lat, center.Lng, 10), nil
+}
+
 // CellBoundaryWKT retorna el polígono del hexágono en formato WKT
 // (SRID 4326 implícito), almacenado como texto plano en cell_agg.geom_wkt
 // y usado solo si alguien exporta a QGIS (ver AdminHandler.ExportCSV).

@@ -63,6 +63,8 @@ func New(db *sql.DB, cfg config.Config) *gin.Engine {
 				admin.PATCH("/reports/:id", adminH.ReviewReport)
 				admin.GET("/export.csv", adminH.ExportCSV)
 				admin.DELETE("/cells/:h3_index", adminH.DeleteCell)
+				admin.PATCH("/cells/:h3_index/score", adminH.UpdateCellScore)
+				admin.DELETE("/cells/:h3_index/score", adminH.RevertCellScore)
 				admin.POST("/invite-codes", inviteH.Generate)
 				admin.GET("/invite-codes", inviteH.List)
 			}

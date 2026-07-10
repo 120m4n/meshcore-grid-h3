@@ -7,6 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 	olc "github.com/google/open-location-code/go"
 
+	"meshcore-map/api/internal/h3util"
 	"meshcore-map/api/internal/models"
 )
 
@@ -16,12 +17,18 @@ type CellHandler struct {
 
 // List lee la tabla materializada cell_agg (recalculada por AdminHandler
 // cada vez que se aprueba/rechaza un reporte). Es la misma tabla que
-// public, sin tocar la columna geom_wkt (esa solo se usa para export CSV/QGIS).
+// consume tanto el mapa público como la tabla "Celdas activas" del
+// admin (mismo endpoint, sin duplicar query) — de ahí que también
+// exponga manual_override, aunque el mapa público lo ignore.
+// plus_code se calcula al vuelo desde el h3_index (h3util.CellPlusCode),
+// no se guarda en cell_agg (ver 0004_cell_overrides.sql).
 func (h *CellHandler) List(c *gin.Context) {
 	rows, err := h.DB.Query(`
-		SELECT h3_index, score_pct, report_count, last_report_at
-		FROM cell_agg
-		ORDER BY h3_index
+		SELECT c.h3_index, c.score_pct, c.report_count, c.last_report_at,
+		       co.h3_index IS NOT NULL AS manual_override
+		FROM cell_agg c
+		LEFT JOIN cell_overrides co ON co.h3_index = c.h3_index
+		ORDER BY c.h3_index
 	`)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "no se pudo consultar celdas"})
@@ -32,8 +39,11 @@ func (h *CellHandler) List(c *gin.Context) {
 	cells := []models.CellAggregate{}
 	for rows.Next() {
 		var cell models.CellAggregate
-		if err := rows.Scan(&cell.H3Index, &cell.ScorePct, &cell.ReportCount, &cell.LastReportAt); err != nil {
+		if err := rows.Scan(&cell.H3Index, &cell.ScorePct, &cell.ReportCount, &cell.LastReportAt, &cell.ManualOverride); err != nil {
 			continue
+		}
+		if code, err := h3util.CellPlusCode(cell.H3Index); err == nil {
+			cell.PlusCode = code
 		}
 		cells = append(cells, cell)
 	}

@@ -65,12 +65,19 @@ type Report struct {
 	CreatedAt           string        `json:"created_at"`
 }
 
-// CellAggregate es lo que consume el mapa público (endpoint /cells).
+// CellAggregate es lo que consume el mapa público (endpoint /cells) —
+// también lo reutiliza la tabla "Celdas activas" del admin (mismo
+// endpoint, sin duplicar query). PlusCode se calcula al servir la
+// respuesta (ver h3util.CellPlusCode), no vive en la tabla cell_agg.
+// ManualOverride indica si score_pct está "fijado" a mano por un admin
+// (ver cell_overrides) en vez del promedio automático de reportes.
 type CellAggregate struct {
-	H3Index      string  `json:"h3_index"`
-	ScorePct     float64 `json:"score_pct"`
-	ReportCount  int     `json:"report_count"`
-	LastReportAt string  `json:"last_report_at"`
+	H3Index        string  `json:"h3_index"`
+	ScorePct       float64 `json:"score_pct"`
+	ReportCount    int     `json:"report_count"`
+	LastReportAt   string  `json:"last_report_at"`
+	PlusCode       string  `json:"plus_code"`
+	ManualOverride bool    `json:"manual_override"`
 }
 
 // CreateReportInput acepta lat/lon O plus_code, nunca ambos vacíos.

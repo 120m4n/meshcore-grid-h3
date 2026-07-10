@@ -5,6 +5,7 @@ import (
 	"encoding/csv"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/gin-gonic/gin"
 
@@ -112,14 +113,29 @@ func (h *AdminHandler) ReviewReport(c *gin.Context) {
 
 // recomputeCellAggregate recalcula score_pct/report_count/last_report_at
 // y la geometría (geom) para una celda H3, a partir de sus reportes
-// aprobados. Si ya no quedan reportes aprobados, elimina la fila.
+// aprobados. Si ya no quedan reportes aprobados Y no hay un override
+// manual activo, elimina la fila.
+//
+// Si hay un override manual (cell_overrides, ver AdminHandler.UpdateCellScore),
+// score_pct queda "fijado" al valor del admin — no lo pisa el promedio
+// automático — pero report_count/last_report_at siguen reflejando los
+// reportes reales (son datos informativos, no lo que se está corrigiendo).
+// Una celda overridden con 0 reportes reales NO se borra: el admin la
+// quiso visible con ese score a propósito.
 func recomputeCellAggregate(sqlDB *sql.DB, h3Index string) error {
+	var overrideScore sql.NullFloat64
+	err := sqlDB.QueryRow(`SELECT score_pct FROM cell_overrides WHERE h3_index = ?`, h3Index).Scan(&overrideScore)
+	if err != nil && err != sql.ErrNoRows {
+		return err
+	}
+	overridden := err == nil
+
 	var (
 		scorePct     sql.NullFloat64
 		reportCount  int
 		lastReportAt sql.NullString
 	)
-	err := sqlDB.QueryRow(`
+	err = sqlDB.QueryRow(`
 		SELECT
 			AVG(CASE signal_quality
 				WHEN 'sin_cobertura' THEN 0
@@ -136,9 +152,20 @@ func recomputeCellAggregate(sqlDB *sql.DB, h3Index string) error {
 		return err
 	}
 
-	if reportCount == 0 {
+	if reportCount == 0 && !overridden {
 		_, err := sqlDB.Exec(`DELETE FROM cell_agg WHERE h3_index = ?`, h3Index)
 		return err
+	}
+
+	finalScore := scorePct.Float64
+	if overridden {
+		finalScore = overrideScore.Float64
+	}
+	finalLastReportAt := lastReportAt.String
+	if !lastReportAt.Valid {
+		// overridden pero sin reportes reales: no hay MAX(created_at)
+		// real que mostrar, se usa "ahora" como último toque conocido.
+		finalLastReportAt = time.Now().UTC().Format("2006-01-02 15:04:05")
 	}
 
 	wkt, err := h3util.CellBoundaryWKT(h3Index)
@@ -154,8 +181,72 @@ func recomputeCellAggregate(sqlDB *sql.DB, h3Index string) error {
 			report_count = excluded.report_count,
 			last_report_at = excluded.last_report_at,
 			geom_wkt = excluded.geom_wkt
-	`, h3Index, scorePct.Float64, reportCount, lastReportAt.String, wkt)
+	`, h3Index, finalScore, reportCount, finalLastReportAt, wkt)
 	return err
+}
+
+type updateCellScoreInput struct {
+	ScorePct float64 `json:"score_pct" binding:"required,min=0,max=100"`
+}
+
+// UpdateCellScore fija manualmente el score_pct de una celda — un admin
+// puede corregir la intensidad de señal mostrada sin depender del
+// promedio automático de reportes. Queda "fijado" (ver cell_overrides)
+// hasta que se revierte explícitamente con RevertCellScore.
+func (h *AdminHandler) UpdateCellScore(c *gin.Context) {
+	h3Index := c.Param("h3_index")
+	adminID, _ := c.Get("user_id")
+
+	var in updateCellScoreInput
+	if err := c.ShouldBindJSON(&in); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	_, err := h.DB.Exec(`
+		INSERT INTO cell_overrides (h3_index, score_pct, updated_by, updated_at)
+		VALUES (?, ?, ?, datetime('now'))
+		ON CONFLICT(h3_index) DO UPDATE SET
+			score_pct = excluded.score_pct,
+			updated_by = excluded.updated_by,
+			updated_at = excluded.updated_at
+	`, h3Index, in.ScorePct, adminID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "no se pudo guardar el override"})
+		return
+	}
+
+	if err := recomputeCellAggregate(h.DB, h3Index); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "no se pudo aplicar el override: " + err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"h3_index": h3Index, "score_pct": in.ScorePct, "manual_override": true})
+}
+
+// RevertCellScore borra el override manual y vuelve a dejar el score_pct
+// de la celda en manos del promedio automático de reportes aprobados
+// (puede incluso hacer desaparecer la celda si no le quedan reportes
+// reales — mismo comportamiento que si nunca hubiera tenido override).
+func (h *AdminHandler) RevertCellScore(c *gin.Context) {
+	h3Index := c.Param("h3_index")
+
+	res, err := h.DB.Exec(`DELETE FROM cell_overrides WHERE h3_index = ?`, h3Index)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "no se pudo revertir el override"})
+		return
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		c.JSON(http.StatusNotFound, gin.H{"error": "esa celda no tiene un override activo"})
+		return
+	}
+
+	if err := recomputeCellAggregate(h.DB, h3Index); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "no se pudo recalcular la celda: " + err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"h3_index": h3Index, "manual_override": false})
 }
 
 // DeleteCell revoca todos los reportes aprobados de una celda H3,

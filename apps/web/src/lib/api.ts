@@ -29,10 +29,23 @@ export interface CellAggregate {
   score_pct: number;
   report_count: number;
   last_report_at: string;
+  plus_code: string;
+  manual_override: boolean;
 }
 
 export function getCells(): Promise<CellAggregate[]> {
   return apiFetch('/api/v1/cells');
+}
+
+export function updateCellScore(h3Index: string, scorePct: number) {
+  return apiFetch(`/api/v1/admin/cells/${h3Index}/score`, {
+    method: 'PATCH',
+    body: JSON.stringify({ score_pct: scorePct }),
+  });
+}
+
+export function revertCellScore(h3Index: string) {
+  return apiFetch(`/api/v1/admin/cells/${h3Index}/score`, { method: 'DELETE' });
 }
 
 export function login(email: string, password: string) {
