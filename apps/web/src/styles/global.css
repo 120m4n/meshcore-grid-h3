@@ -48,6 +48,20 @@ html, body {
   color: var(--text);
 }
 
+/* topbar + contenido en columna: el mapa (única página con contenido de
+   altura fija en vez de largo natural) usa flex:1 para ocupar el resto
+   del viewport sin un offset en píxeles fijo. Antes #map tenía
+   "top: 56px" hardcodeado asumiendo que .topbar mide siempre una fila —
+   en mobile el nav hace wrap a 2+ filas y el mapa (position:absolute)
+   quedaba tapando esa segunda fila de botones. En el resto de las
+   páginas (formularios, admin) esto no cambia nada visible: <main>
+   sigue con su alto natural de contenido, no estirado, porque no tiene
+   flex explícito (default flex: 0 1 auto). */
+body {
+  display: flex;
+  flex-direction: column;
+}
+
 a { color: var(--accent); }
 a:hover { color: var(--accent-dim); }
 
@@ -177,11 +191,11 @@ textarea:focus-visible {
 
 /* ============ mapa ============ */
 #map {
-  position: absolute;
-  top: 56px;
-  bottom: 0;
-  left: 0;
-  right: 0;
+  flex: 1;
+  min-height: 0; /* sin esto, un flex item en columna puede no encogerse
+    por debajo de su alto de contenido intrínseco */
+  position: relative; /* Leaflet posiciona sus panes internos (tiles,
+    controles) en absolute relativo a este contenedor */
   background: var(--bg);
 }
 
