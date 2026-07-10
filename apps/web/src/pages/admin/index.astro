@@ -2,7 +2,7 @@
 import '../../styles/global.css';
 ---
 <html lang="es">
-<head><meta charset="UTF-8" /><title>Moderación — MeshCore Santander</title></head>
+<head><meta charset="UTF-8" /><link rel="icon" type="image/svg+xml" href="/favicon.svg" /><title>Moderación — MeshCore Santander</title></head>
 <body>
   <header class="topbar">
     <h1>Moderación</h1>
@@ -10,7 +10,7 @@ import '../../styles/global.css';
   </header>
 
   <main>
-    <h2>Reportes pendientes</h2>
+    <h2 class="section-title">Reportes pendientes</h2>
     <table id="reports-table">
       <thead>
         <tr>
@@ -20,18 +20,33 @@ import '../../styles/global.css';
       </thead>
       <tbody></tbody>
     </table>
-    <p id="status"></p>
+    <p id="status" class="hint"></p>
 
-    <h2>Celdas activas</h2>
+    <h2 class="section-title">Celdas activas</h2>
+    <label>Filtrar por plus code
+      <input type="text" id="cells-filter" placeholder="p.ej. 869876XV+GX" autocomplete="off" />
+    </label>
     <table id="cells-table">
       <thead>
         <tr>
-          <th>Celda H3</th><th>Señal</th><th>Reportes</th><th>Última actualización</th><th>Acciones</th>
+          <th>Celda H3</th><th>Plus code</th><th>Señal</th><th>Reportes</th><th>Última actualización</th><th>Acciones</th>
         </tr>
       </thead>
       <tbody></tbody>
     </table>
-    <p id="cells-status"></p>
+    <p id="cells-status" class="hint"></p>
+
+    <h2 class="section-title">Códigos de invitación</h2>
+    <button id="btn-generate-invite">Generar código</button>
+    <table id="invite-codes-table">
+      <thead>
+        <tr>
+          <th>Código</th><th>Estado</th><th>Creado</th><th>Expira / usado</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+    <p id="invite-codes-status" class="hint"></p>
   </main>
 
   <script src="../../lib/adminPage.ts"></script>
