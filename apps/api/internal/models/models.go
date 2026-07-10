@@ -92,3 +92,15 @@ type CellOrigin struct {
 	LngLo    float64 `json:"lng_lo"`
 	LngHi    float64 `json:"lng_hi"`
 }
+
+// InviteCode es de un solo uso: Register lo consume atómicamente al
+// crear la cuenta (ver AuthHandler.Register). UsedBy/UsedAt viajan
+// como punteros porque quedan NULL hasta ese momento.
+type InviteCode struct {
+	Code      string  `json:"code"`
+	CreatedBy string  `json:"created_by"`
+	CreatedAt string  `json:"created_at"`
+	ExpiresAt string  `json:"expires_at"`
+	UsedBy    *string `json:"used_by,omitempty"`
+	UsedAt    *string `json:"used_at,omitempty"`
+}
