@@ -27,8 +27,10 @@ async function load() {
         <td>${r.message || '-'}</td>
         <td>${new Date(r.created_at).toLocaleString('es-CO')}</td>
         <td>
-          <button data-id="${r.id}" data-action="approved">Aprobar</button>
-          <button data-id="${r.id}" data-action="rejected">Rechazar</button>
+          <div class="table-actions">
+            <button class="btn-secondary btn-sm" data-id="${r.id}" data-action="approved">Aprobar</button>
+            <button class="btn-danger btn-sm" data-id="${r.id}" data-action="rejected">Rechazar</button>
+          </div>
         </td>`;
       tbody.appendChild(tr);
     }
@@ -65,11 +67,15 @@ function renderCellsTable(cells: CellAggregate[]) {
       ? `<input type="number" min="0" max="100" step="1" value="${Math.round(cell.score_pct)}" id="score-input-${cell.h3_index}" style="width:5rem" />`
       : `${Math.round(cell.score_pct)}%${cell.manual_override ? ' <span class="hint" title="Fijado a mano por un admin">(manual)</span>' : ''}`;
     const actionsCell = isEditing
-      ? `<button data-action="save" data-h3="${cell.h3_index}">Guardar</button>
-         <button data-action="cancel" data-h3="${cell.h3_index}">Cancelar</button>`
-      : `<button data-action="edit" data-h3="${cell.h3_index}">Editar</button>
-         ${cell.manual_override ? `<button data-action="revert" data-h3="${cell.h3_index}">Revertir a automático</button>` : ''}
-         <button class="btn-danger" data-action="delete" data-h3="${cell.h3_index}">Eliminar</button>`;
+      ? `<div class="table-actions">
+           <button class="btn-secondary btn-sm" data-action="save" data-h3="${cell.h3_index}">Guardar</button>
+           <button class="btn-secondary btn-sm" data-action="cancel" data-h3="${cell.h3_index}">Cancelar</button>
+         </div>`
+      : `<div class="table-actions">
+           <button class="btn-secondary btn-sm" data-action="edit" data-h3="${cell.h3_index}">Editar</button>
+           ${cell.manual_override ? `<button class="btn-secondary btn-sm" data-action="revert" data-h3="${cell.h3_index}">Revertir a automático</button>` : ''}
+           <button class="btn-danger btn-sm" data-action="delete" data-h3="${cell.h3_index}">Eliminar</button>
+         </div>`;
     tr.innerHTML = `
       <td>${cell.h3_index}</td>
       <td>${cell.plus_code}</td>
