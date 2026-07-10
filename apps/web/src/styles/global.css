@@ -336,6 +336,14 @@ textarea:focus-visible {
   margin-top: 0.4rem;
 }
 
+/* padding base para cualquier <main> sin clase propia (hoy solo
+   /admin) — .form-container (login/registro/reportar) ya trae su
+   propio padding con mayor especificidad (selector de clase > de
+   elemento), así que esta regla no le cambia nada a esas páginas. */
+main {
+  padding: 1.25rem 1.25rem 2rem;
+}
+
 /* ============ formularios (login/registro/reportar/admin) ============ */
 .form-container {
   max-width: 480px;
@@ -502,6 +510,14 @@ button[type="submit"]:disabled { opacity: 0.5; cursor: not-allowed; }
   color: var(--text-dim);
 }
 .section-title:first-of-type { margin-top: 1.25rem; }
+
+/* wrapper de scroll horizontal — evita que una tabla ancha (ej.
+   6 columnas de "Celdas activas") fuerce el ancho de toda la página en
+   mobile; el scroll queda contenido dentro de la tabla, no en el body. */
+.table-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
 
 table { width: 100%; border-collapse: collapse; margin: 1rem; }
 th, td { border: 1px solid var(--border); padding: 0.5rem; text-align: left; font-size: 0.9rem; color: var(--text); }

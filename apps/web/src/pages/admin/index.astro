@@ -11,41 +11,47 @@ import '../../styles/global.css';
 
   <main>
     <h2 class="section-title">Reportes pendientes</h2>
-    <table id="reports-table">
-      <thead>
-        <tr>
-          <th>Celda H3</th><th>Quién reporta</th><th>Calidad</th>
-          <th>Mensaje</th><th>Fecha</th><th>Acciones</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
+    <div class="table-scroll">
+      <table id="reports-table">
+        <thead>
+          <tr>
+            <th>Celda H3</th><th>Quién reporta</th><th>Calidad</th>
+            <th>Mensaje</th><th>Fecha</th><th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
     <p id="status" class="hint"></p>
 
     <h2 class="section-title">Celdas activas</h2>
     <label>Filtrar por plus code
       <input type="text" id="cells-filter" placeholder="p.ej. 869876XV+GX" autocomplete="off" />
     </label>
-    <table id="cells-table">
-      <thead>
-        <tr>
-          <th>Celda H3</th><th>Plus code</th><th>Señal</th><th>Reportes</th><th>Última actualización</th><th>Acciones</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
+    <div class="table-scroll">
+      <table id="cells-table">
+        <thead>
+          <tr>
+            <th>Celda H3</th><th>Plus code</th><th>Señal</th><th>Reportes</th><th>Última actualización</th><th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
     <p id="cells-status" class="hint"></p>
 
     <h2 class="section-title">Códigos de invitación</h2>
-    <button id="btn-generate-invite">Generar código</button>
-    <table id="invite-codes-table">
-      <thead>
-        <tr>
-          <th>Código</th><th>Estado</th><th>Creado</th><th>Expira / usado</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
+    <button id="btn-generate-invite" class="btn-secondary">Generar código</button>
+    <div class="table-scroll">
+      <table id="invite-codes-table">
+        <thead>
+          <tr>
+            <th>Código</th><th>Estado</th><th>Creado</th><th>Expira / usado</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
     <p id="invite-codes-status" class="hint"></p>
   </main>
 
