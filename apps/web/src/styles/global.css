@@ -71,6 +71,11 @@ a:hover { color: var(--accent-dim); }
   z-index: 0; /* crea stacking context propio: sin esto, el z-index:-1
     del watermark escapa al contexto raíz y queda detrás de <body> */
   overflow: hidden;
+  flex-shrink: 0; /* .topbar es flex item de body (columna, height:100%);
+    overflow:hidden hace que su tamaño mínimo automático sea 0 en vez de
+    basado en contenido (regla de flexbox), así que sin esto el topbar
+    se encogía por debajo de su alto real cuando <main> tenía suficiente
+    contenido (tablas de /admin), recortando los botones del nav. */
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -545,5 +550,14 @@ th { font-family: var(--font-display); font-size: 0.68rem; text-transform: upper
   .topbar { padding: 0.5rem 0.75rem; }
   .brand { font-size: 0.9rem; }
   .topbar nav a, .topbar nav button, .btn { font-size: 0.65rem; padding: 0.4rem 0.55rem; }
+  /* iteración 1: flex:1 en los botones no alcanzaba porque <nav> (el
+     contenedor) nunca se estiraba al ancho completo del topbar — cuando
+     el contenido de nav cabía en menos espacio, nav solo ocupaba su
+     ancho natural y quedaba espacio muerto A LA DERECHA DE NAV (no
+     dentro de nav), dejando los botones agrupados a la izquierda.
+     flex-basis:100% fuerza a nav a ocupar siempre la fila completa;
+     recién ahí flex:1 en los botones tiene espacio real para repartir. */
+  .topbar nav { flex: 1 1 100%; }
+  .topbar nav a, .topbar nav button { flex: 1 1 auto; text-align: center; }
   .legend { left: 0.6rem; right: 0.6rem; bottom: 0.9rem; }
 }

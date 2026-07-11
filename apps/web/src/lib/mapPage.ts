@@ -53,17 +53,7 @@ let originsLayer = L.layerGroup().addTo(map);
 let userLocationLayer = L.layerGroup().addTo(map);
 const realIndexes = new Set<string>();
 
-// TTL del botón "Actualizar mapa": esto no es un mapa de navegación ni
-// de eventos en tiempo real — la cobertura de una celda cambia en horas,
-// no en segundos. 45 min evita forzar al backend con clicks repetidos y
-// abuso del cliente. Persistido en localStorage (no solo en memoria)
-// para que recargar la página no reinicie el conteo.
-const CELLS_REFRESH_TTL_MS = 45 * 60 * 1000;
 const CELLS_LAST_FETCH_KEY = 'meshcore:cells-last-fetch';
-
-function getCellsLastFetchAt(): number {
-  return Number(localStorage.getItem(CELLS_LAST_FETCH_KEY)) || 0;
-}
 
 function markCellsFetched() {
   try {
@@ -323,8 +313,15 @@ function enableTestMode() {
     addTestCell(h3Index);
     copyReportMessage(pos.coords.latitude, pos.coords.longitude);
   });
-  document.getElementById('btn-clear-test')!.hidden = false;
-  document.getElementById('btn-clear-test')!.addEventListener('click', clearTestCells);
+  // solo admin puede acumular varias celdas de prueba en cualquier parte
+  // del mapa (sin el candado de GPS) — un usuario normal tiene como
+  // máximo una, la de su ubicación actual, y ya puede quitarla clickeando
+  // de nuevo esa misma celda (ver isTestCell arriba). Mostrarles este
+  // botón es redundante y sugiere un estado acumulado que nunca existe.
+  if (isAdmin) {
+    document.getElementById('btn-clear-test')!.hidden = false;
+    document.getElementById('btn-clear-test')!.addEventListener('click', clearTestCells);
+  }
   renderAllTestCells();
 }
 
@@ -353,16 +350,6 @@ if (isAdmin) {
   });
 }
 
-document.getElementById('btn-refresh')!.addEventListener('click', () => {
-  const elapsed = Date.now() - getCellsLastFetchAt();
-  if (elapsed < CELLS_REFRESH_TTL_MS) {
-    const remainingMin = Math.ceil((CELLS_REFRESH_TTL_MS - elapsed) / 60000);
-    showToast(`El mapa ya está al día. Podés actualizarlo de nuevo en ${remainingMin} min.`, 'error');
-    return;
-  }
-  if (testModeEnabled) clearTestCells();
-  loadCells();
-});
 loadCells();
 
 // Mostrar/ocultar nav según sesión
