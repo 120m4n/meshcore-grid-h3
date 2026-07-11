@@ -125,23 +125,17 @@ a:hover { color: var(--accent-dim); }
 }
 
 /* signature: barras de señal ascendentes — el mismo lenguaje visual
-   que usa el mapa para representar calidad de conexión */
+   que usa el mapa para representar calidad de conexión. SVG en vez de
+   4 <span> con altura en %: un solo elemento, sin depender de que el
+   contenedor le dé una altura de referencia para que el % resuelva. */
 .brand-bars {
-  display: inline-flex;
-  align-items: flex-end;
-  gap: 2px;
+  width: 18px;
   height: 14px;
+  flex-shrink: 0;
 }
-.brand-bars span {
-  width: 3px;
-  background: var(--accent);
-  border-radius: 1px;
-  display: block;
+.brand-bars rect {
+  fill: var(--accent);
 }
-.brand-bars span:nth-child(1) { height: 40%; }
-.brand-bars span:nth-child(2) { height: 65%; }
-.brand-bars span:nth-child(3) { height: 85%; }
-.brand-bars span:nth-child(4) { height: 100%; }
 
 .topbar nav {
   display: flex;
