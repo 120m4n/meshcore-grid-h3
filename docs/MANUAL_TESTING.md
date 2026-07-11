@@ -367,3 +367,41 @@ curl -s "http://localhost:8080/api/v1/cells/<h3_index>/origins" \
    `http://localhost:8081/reportar` con F5, no solo navegar con links).
 6. **Esperado:** carga la página normalmente, sin 404 ni redirect a
    puerto incorrecto (ver nota de nginx en `CLAUDE.md` si esto falla).
+
+## 8. Mobile-first (viewport angosto)
+
+Requiere devtools del navegador con modo responsive/device toolbar
+(Chrome/Firefox: F12 → ícono de celular), o un teléfono real.
+
+1. Con devtools en modo responsive, fijar el ancho en 375px (iPhone SE)
+   y recargar http://localhost:8081/.
+2. **Esperado:** el texto se ve a tamaño legible sin necesidad de hacer
+   zoom manual (confirma que la meta viewport está activa) — antes de
+   este fix, `/login`, `/register`, `/reportar` y `/admin` se veían
+   "zoomeados" a un ancho virtual de ~980px.
+3. Sin login, verificar que los botones "Ingresar" y "Actualizar mapa"
+   del nav sean completamente visibles y clickeables.
+4. **Esperado:** ningún botón queda tapado por el mapa, sin importar si
+   el nav ocupa una o dos filas.
+5. Loguearse como admin y volver a http://localhost:8081/.
+6. **Esperado:** con más botones en el nav (Reportar/Salir/Admin/Activar
+   modo prueba/Actualizar mapa), el nav puede ocupar 2+ filas — todos
+   siguen siendo visibles y clickeables, el mapa arranca debajo de la
+   última fila del nav.
+7. Ir a http://localhost:8081/admin en 375px.
+8. **Esperado:** "Reportes pendientes", "Celdas activas", "Filtrar por
+   plus code", "Códigos de invitación" y los textos de estado vacío
+   tienen separación visible del borde izquierdo — no pegados al margen.
+9. Con al menos una celda activa cargada, verificar que la tabla
+   "Celdas activas" pueda hacer scroll horizontal *dentro de su propio
+   recuadro* sin forzar scroll horizontal de toda la página.
+10. Click **Editar** en una fila.
+11. **Esperado:** el botón tiene el mismo estilo visual (borde teal,
+    fuente monospace) que el resto de los botones de la app — no el
+    gris default del navegador. "Guardar"/"Cancelar" tienen espacio
+    entre sí, no se tocan.
+12. Repetir los pasos 1-11 en `/login`, `/register` y `/reportar`.
+13. **Esperado:** ninguna de las 3 páginas requiere zoom para leer el
+    texto, y los formularios se ven con el mismo padding que siempre
+    tuvieron (regresión = cero cambios en estas 3 páginas, ya estaban
+    bien).
