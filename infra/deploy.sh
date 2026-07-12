@@ -9,6 +9,11 @@
 # Variables:
 #   REGISTRY        default: ghcr.io
 #   IMAGE_OWNER     default: owner/org de "git remote origin" (GitHub)
+#
+# Build fijado a --platform linux/amd64: el servidor de producción es
+# amd64, pero "docker build" sin --platform usa el arch del host que
+# corre este script (arm64 en Apple Silicon), lo que produce imágenes
+# que fallan en el server con "exec format error" al arrancar.
 #   PUBLIC_API_URL  obligatoria — origen público donde se sirve el
 #                   frontend (NO un subdominio api.* aparte). Astro la
 #                   hornea en el build del bundle JS; en runtime el
@@ -33,11 +38,13 @@ WEB_IMAGE="${REGISTRY}/${IMAGE_OWNER}/meshcore-web"
 
 echo "==> api: ${API_IMAGE}:${COMMIT_SHA} (+ :latest)"
 docker build \
+  --platform linux/amd64 \
   -t "${API_IMAGE}:${COMMIT_SHA}" -t "${API_IMAGE}:latest" \
   ./apps/api
 
 echo "==> web: ${WEB_IMAGE}:${COMMIT_SHA} (+ :latest) — PUBLIC_API_URL=${PUBLIC_API_URL}"
 docker build \
+  --platform linux/amd64 \
   --build-arg PUBLIC_API_URL="${PUBLIC_API_URL}" \
   -t "${WEB_IMAGE}:${COMMIT_SHA}" -t "${WEB_IMAGE}:latest" \
   ./apps/web

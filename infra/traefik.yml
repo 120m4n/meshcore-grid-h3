@@ -1,0 +1,64 @@
+services:
+  web:
+    image: ghcr.io/120m4n/meshcore-web:latest
+    container_name: meshcore-web
+    platform: linux/amd64
+    restart: unless-stopped
+    depends_on:
+      - api
+    networks:
+      traefik_public:
+        aliases:
+          - meshcore-web-public
+      default:
+    labels:
+      # --- Traefik enable ---
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik_public"
+      # --- Router HTTPS ---
+      - "traefik.http.routers.meshcore-web.rule=Host(`meshcore-bga.sidis-ingenieria.com`)"
+      - "traefik.http.routers.meshcore-web.tls=true"
+      - "traefik.http.routers.meshcore-web.tls.certresolver=mytlschallenge"
+      - "traefik.http.routers.meshcore-web.entrypoints=websecure"
+      - "traefik.http.routers.meshcore-web.service=meshcore-web"
+      # --- Backend ---
+      - "traefik.http.services.meshcore-web.loadbalancer.server.port=80"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1/ || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  api:
+    image: ghcr.io/120m4n/meshcore-api:latest
+    container_name: meshcore-api
+    platform: linux/amd64
+    restart: unless-stopped
+    # Sin labels de Traefik ni "ports": solo alcanzable dentro de
+    # meshcore-net. El navegador nunca le pega directo — el nginx del
+    # contenedor "web" proxea /api/ (ver apps/web/nginx.conf). El único
+    # servicio ruteado por Traefik es "web".
+    volumes:
+      - /home/roman/meshcore/data:/data
+    networks:
+      - default
+    environment:
+      PORT: "8080"
+      DB_PATH: /data/meshcore.db
+      JWT_SECRET: "CAMBIAR-POR-SECRETO-LARGO-Y-ALEATORIO-DE-PRODUCCION"
+      H3_RESOLUTION: "8"
+      WEB_ORIGIN: "https://meshcore-bga.sidis-ingenieria.com"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:8080/api/v1/cells || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+networks:
+  traefik_public:
+    external: true
+  default:
+    name: meshcore-net
+    external: false
