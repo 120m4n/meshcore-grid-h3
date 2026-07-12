@@ -9,7 +9,9 @@ infra/data/
 # entornos locales (no comitear secretos)
 .env
 apps/web/.env
-infra/.env
+infra/.env*
+!infra/.env.example
+!infra/.env.prod.example
 
 # settings locales de Claude Code (permisos por máquina, no compartidos)
 .claude/settings.local.json

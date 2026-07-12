@@ -1,0 +1,34 @@
+services:
+  api:
+    image: ghcr.io/${IMAGE_OWNER:?Set IMAGE_OWNER (ver infra/.env.prod.example)}/meshcore-api:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    # sin "ports": no se publica al host. Solo alcanzable dentro de
+    # meshcore-net — el navegador nunca le pega directo, siempre pasa
+    # por el proxy /api/ del nginx del contenedor web (ver
+    # apps/web/nginx.conf). Cuando Traefik quede al frente, el único
+    # servicio con label será "web" — este queda igual, sin cambios.
+    volumes:
+      - ./data:/data
+    environment:
+      PORT: "8080"
+      DB_PATH: /data/meshcore.db
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET (ver infra/.env.prod.example)}
+      H3_RESOLUTION: ${H3_RESOLUTION:-8}
+      WEB_ORIGIN: ${WEB_ORIGIN:?Set WEB_ORIGIN (ver infra/.env.prod.example)}
+
+  web:
+    image: ghcr.io/${IMAGE_OWNER:?Set IMAGE_OWNER (ver infra/.env.prod.example)}/meshcore-web:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    # Publicado directo por ahora, para poder probar las imágenes
+    # pulleadas del registry sin depender de Traefik todavía (sin
+    # labels a propósito — se agregan en una pasada aparte). Este es el
+    # único puerto/servicio que Traefik va a rutear más adelante.
+    ports:
+      - "${WEB_PORT:-8081}:80"
+    depends_on:
+      - api
+
+networks:
+  default:
+    name: meshcore-net
+    external: false
