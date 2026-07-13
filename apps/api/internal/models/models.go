@@ -80,6 +80,17 @@ type CellAggregate struct {
 	ManualOverride bool    `json:"manual_override"`
 }
 
+// CellPage es la respuesta de GET /cells cuando se pasa el query param
+// "page" — usado por la tabla "Celdas activas" del admin. Sin "page" el
+// endpoint devuelve el array plano de siempre (lo consume el mapa
+// público, que necesita todas las celdas de una sola vez).
+type CellPage struct {
+	Items    []CellAggregate `json:"items"`
+	Total    int             `json:"total"`
+	Page     int             `json:"page"`
+	PageSize int             `json:"page_size"`
+}
+
 // CreateReportInput acepta lat/lon O plus_code, nunca ambos vacíos.
 type CreateReportInput struct {
 	Lat                 *float64      `json:"lat"`

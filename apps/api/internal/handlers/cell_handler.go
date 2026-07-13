@@ -3,6 +3,8 @@ package handlers
 import (
 	"database/sql"
 	"net/http"
+	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	olc "github.com/google/open-location-code/go"
@@ -10,6 +12,8 @@ import (
 	"meshcore-map/api/internal/h3util"
 	"meshcore-map/api/internal/models"
 )
+
+const defaultCellPageSize = 100
 
 type CellHandler struct {
 	DB *sql.DB
@@ -22,6 +26,15 @@ type CellHandler struct {
 // exponga manual_override, aunque el mapa público lo ignore.
 // plus_code se calcula al vuelo desde el h3_index (h3util.CellPlusCode),
 // no se guarda en cell_agg (ver 0004_cell_overrides.sql).
+//
+// Sin query param "page", responde el array plano completo de siempre
+// (el mapa público lo llama así — necesita TODAS las celdas para pintar
+// los hexágonos, nunca solo una página). Con "page", filtra por "q"
+// (substring de plus_code, usado por el filtro de la tabla admin) y
+// pagina, devolviendo models.CellPage. El total de celdas activas de una
+// red mesh regional es chico, así que filtrar/paginar en memoria en Go
+// es más simple que armar el filtro (plus_code no es columna SQL) en la
+// query.
 func (h *CellHandler) List(c *gin.Context) {
 	rows, err := h.DB.Query(`
 		SELECT c.h3_index, c.score_pct, c.report_count, c.last_report_at,
@@ -48,7 +61,49 @@ func (h *CellHandler) List(c *gin.Context) {
 		cells = append(cells, cell)
 	}
 
-	c.JSON(http.StatusOK, cells)
+	pageParam := c.Query("page")
+	if pageParam == "" {
+		c.JSON(http.StatusOK, cells)
+		return
+	}
+
+	page, err := strconv.Atoi(pageParam)
+	if err != nil || page < 1 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "page debe ser un entero >= 1"})
+		return
+	}
+
+	pageSize := defaultCellPageSize
+	if ps := c.Query("page_size"); ps != "" {
+		v, err := strconv.Atoi(ps)
+		if err != nil || v < 1 {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "page_size debe ser un entero >= 1"})
+			return
+		}
+		pageSize = v
+	}
+
+	if q := strings.TrimSpace(c.Query("q")); q != "" {
+		query := strings.ToUpper(q)
+		filtered := make([]models.CellAggregate, 0, len(cells))
+		for _, cell := range cells {
+			if strings.Contains(strings.ToUpper(cell.PlusCode), query) {
+				filtered = append(filtered, cell)
+			}
+		}
+		cells = filtered
+	}
+
+	total := len(cells)
+	start := min((page-1)*pageSize, total)
+	end := min(start+pageSize, total)
+
+	c.JSON(http.StatusOK, models.CellPage{
+		Items:    cells[start:end],
+		Total:    total,
+		Page:     page,
+		PageSize: pageSize,
+	})
 }
 
 // Origins devuelve las áreas de plus code (nivel 10, ~13m) que

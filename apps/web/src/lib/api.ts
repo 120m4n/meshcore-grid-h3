@@ -37,6 +37,24 @@ export function getCells(): Promise<CellAggregate[]> {
   return apiFetch('/api/v1/cells');
 }
 
+export interface CellPage {
+  items: CellAggregate[];
+  total: number;
+  page: number;
+  page_size: number;
+}
+
+// Paginado server-side (100/página por defecto) — lo usa la tabla
+// "Celdas activas" del admin. Sin query param "page" (getCells arriba),
+// el mismo endpoint devuelve el array plano completo que necesita el
+// mapa público.
+export function getCellsPage(params: { page: number; pageSize?: number; q?: string }): Promise<CellPage> {
+  const search = new URLSearchParams({ page: String(params.page) });
+  if (params.pageSize) search.set('page_size', String(params.pageSize));
+  if (params.q) search.set('q', params.q);
+  return apiFetch(`/api/v1/cells?${search.toString()}`);
+}
+
 export function updateCellScore(h3Index: string, scorePct: number) {
   return apiFetch(`/api/v1/admin/cells/${h3Index}/score`, {
     method: 'PATCH',

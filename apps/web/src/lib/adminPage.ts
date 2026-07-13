@@ -1,4 +1,4 @@
-import { getPendingReports, reviewReport, getCells, deleteCell, updateCellScore, revertCellScore, generateInviteCode, listInviteCodes } from './api.ts';
+import { getPendingReports, reviewReport, getCellsPage, deleteCell, updateCellScore, revertCellScore, generateInviteCode, listInviteCodes } from './api.ts';
 import type { CellAggregate } from './api.ts';
 import { showToast } from './toast.ts';
 import { formatDateTimeBogota, parseUtcDate } from './datetime.ts';
@@ -54,8 +54,14 @@ tbody.addEventListener('click', async (e) => {
 const cellsTbody = document.querySelector('#cells-table tbody')!;
 const cellsStatus = document.getElementById('cells-status')!;
 const cellsFilter = document.getElementById('cells-filter') as HTMLInputElement;
+const cellsPrevBtn = document.getElementById('cells-prev') as HTMLButtonElement;
+const cellsNextBtn = document.getElementById('cells-next') as HTMLButtonElement;
+const cellsPageIndicator = document.getElementById('cells-page-indicator')!;
 
-let allCells: CellAggregate[] = [];
+const CELLS_PAGE_SIZE = 100;
+let currentCells: CellAggregate[] = []; // última página recibida — reusada al re-renderizar (editar/cancelar) sin refetch
+let currentPage = 1;
+let currentTotal = 0;
 // h3_index de la fila en edición inline (una a la vez) — null = ninguna.
 let editingH3: string | null = null;
 
@@ -88,26 +94,39 @@ function renderCellsTable(cells: CellAggregate[]) {
   }
 }
 
-async function loadCells() {
+// Filtra por plus_code — más fácil de recordar/tipear que el h3_index
+// para alguien buscando "esa celda de tal esquina". Server-side (query
+// param "q") porque la tabla está paginada: filtrar solo la página
+// cargada en el cliente daría resultados incompletos/confusos.
+async function loadCells(page: number) {
   try {
-    allCells = await getCells();
-    cellsStatus.textContent = allCells.length === 0 ? 'No hay celdas activas.' : '';
-    applyCellsFilter();
+    const result = await getCellsPage({ page, pageSize: CELLS_PAGE_SIZE, q: cellsFilter.value.trim() });
+    currentCells = result.items;
+    currentPage = result.page;
+    currentTotal = result.total;
+    editingH3 = null;
+    cellsStatus.textContent = currentTotal === 0 ? 'No hay celdas activas.' : '';
+    renderCellsTable(currentCells);
+    updateCellsPagination();
   } catch (err: any) {
     cellsStatus.textContent = `Error: ${err.message}`;
   }
 }
 
-// Filtra por plus_code — más fácil de recordar/tipear que el h3_index
-// para alguien buscando "esa celda de tal esquina".
-function applyCellsFilter() {
-  const query = cellsFilter.value.trim().toUpperCase();
-  const filtered = query
-    ? allCells.filter((c) => c.plus_code.toUpperCase().includes(query))
-    : allCells;
-  renderCellsTable(filtered);
+function updateCellsPagination() {
+  const totalPages = Math.max(1, Math.ceil(currentTotal / CELLS_PAGE_SIZE));
+  cellsPageIndicator.textContent = `Página ${currentPage} de ${totalPages} (${currentTotal} celdas)`;
+  cellsPrevBtn.disabled = currentPage <= 1;
+  cellsNextBtn.disabled = currentPage >= totalPages;
 }
-cellsFilter.addEventListener('input', applyCellsFilter);
+
+let cellsFilterTimeout: ReturnType<typeof setTimeout>;
+cellsFilter.addEventListener('input', () => {
+  clearTimeout(cellsFilterTimeout);
+  cellsFilterTimeout = setTimeout(() => loadCells(1), 300);
+});
+cellsPrevBtn.addEventListener('click', () => loadCells(currentPage - 1));
+cellsNextBtn.addEventListener('click', () => loadCells(currentPage + 1));
 
 cellsTbody.addEventListener('click', async (e) => {
   const btn = (e.target as HTMLElement).closest('button');
@@ -117,12 +136,12 @@ cellsTbody.addEventListener('click', async (e) => {
 
   if (action === 'edit') {
     editingH3 = h3Index;
-    applyCellsFilter();
+    renderCellsTable(currentCells);
     return;
   }
   if (action === 'cancel') {
     editingH3 = null;
-    applyCellsFilter();
+    renderCellsTable(currentCells);
     return;
   }
   if (action === 'save') {
@@ -136,7 +155,7 @@ cellsTbody.addEventListener('click', async (e) => {
       await updateCellScore(h3Index, scorePct);
       showToast('Señal actualizada.', 'success');
       editingH3 = null;
-      loadCells();
+      loadCells(currentPage);
     } catch (err: any) {
       showToast(err.message || 'No se pudo actualizar la señal.', 'error');
     }
@@ -147,7 +166,7 @@ cellsTbody.addEventListener('click', async (e) => {
     try {
       await revertCellScore(h3Index);
       showToast('Celda vuelta a cálculo automático.', 'success');
-      loadCells();
+      loadCells(currentPage);
     } catch (err: any) {
       showToast(err.message || 'No se pudo revertir la celda.', 'error');
     }
@@ -160,7 +179,7 @@ cellsTbody.addEventListener('click', async (e) => {
     try {
       await deleteCell(h3Index);
       showToast('Celda eliminada del mapa.', 'success');
-      loadCells();
+      loadCells(currentPage);
     } catch (err: any) {
       showToast(err.message || 'No se pudo eliminar la celda.', 'error');
     }
@@ -216,5 +235,5 @@ document.getElementById('btn-generate-invite')!.addEventListener('click', async 
 });
 
 load();
-loadCells();
+loadCells(1);
 loadInviteCodes();
