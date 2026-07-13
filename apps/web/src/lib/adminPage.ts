@@ -169,8 +169,7 @@ cellsTbody.addEventListener('click', async (e) => {
   const action = btn.dataset.action;
 
   if (action === 'locate') {
-    // pestaña nueva: no perder la sesión de moderación en esta pestaña
-    window.open(`/?h3=${encodeURIComponent(h3Index)}`, '_blank');
+    window.location.href = `/?h3=${encodeURIComponent(h3Index)}`;
     return;
   }
   if (action === 'edit') {
