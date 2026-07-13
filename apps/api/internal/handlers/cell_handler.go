@@ -55,7 +55,7 @@ func (h *CellHandler) List(c *gin.Context) {
 		ORDER BY c.h3_index
 	`)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "no se pudo consultar celdas"})
+		respondError(c, http.StatusInternalServerError, "no se pudo consultar celdas")
 		return
 	}
 	defer rows.Close()
@@ -80,7 +80,7 @@ func (h *CellHandler) List(c *gin.Context) {
 
 	page, err := strconv.Atoi(pageParam)
 	if err != nil || page < 1 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "page debe ser un entero >= 1"})
+		respondError(c, http.StatusBadRequest, "page debe ser un entero >= 1")
 		return
 	}
 
@@ -88,7 +88,7 @@ func (h *CellHandler) List(c *gin.Context) {
 	if ps := c.Query("page_size"); ps != "" {
 		v, err := strconv.Atoi(ps)
 		if err != nil || v < 1 {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "page_size debe ser un entero >= 1"})
+			respondError(c, http.StatusBadRequest, "page_size debe ser un entero >= 1")
 			return
 		}
 		pageSize = v
@@ -108,12 +108,12 @@ func (h *CellHandler) List(c *gin.Context) {
 	sortBy := c.DefaultQuery("sort_by", "h3_index")
 	less, ok := cellSortFields[sortBy]
 	if !ok {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "sort_by inválido"})
+		respondError(c, http.StatusBadRequest, "sort_by inválido")
 		return
 	}
 	order := c.DefaultQuery("order", "asc")
 	if order != "asc" && order != "desc" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "order debe ser asc o desc"})
+		respondError(c, http.StatusBadRequest, "order debe ser asc o desc")
 		return
 	}
 	sort.SliceStable(cells, func(i, j int) bool {
@@ -150,7 +150,7 @@ func (h *CellHandler) Origins(c *gin.Context) {
 		WHERE h3_index = ? AND status = 'approved'
 	`, h3Index)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "no se pudo consultar los orígenes de la celda"})
+		respondError(c, http.StatusInternalServerError, "no se pudo consultar los orígenes de la celda")
 		return
 	}
 	defer rows.Close()

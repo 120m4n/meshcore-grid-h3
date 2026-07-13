@@ -38,7 +38,7 @@ func (h *AdminHandler) ListReports(c *gin.Context) {
 
 	rows, err := h.DB.Query(query, args...)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "no se pudo consultar reportes"})
+		respondError(c, http.StatusInternalServerError, "no se pudo consultar reportes")
 		return
 	}
 	defer rows.Close()
@@ -72,13 +72,13 @@ func (h *AdminHandler) ReviewReport(c *gin.Context) {
 
 	var in reviewInput
 	if err := c.ShouldBindJSON(&in); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		respondError(c, http.StatusBadRequest, err.Error())
 		return
 	}
 
 	var h3Index string
 	if err := h.DB.QueryRow(`SELECT h3_index FROM reports WHERE id = ?`, id).Scan(&h3Index); err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "reporte no encontrado"})
+		respondError(c, http.StatusNotFound, "reporte no encontrado")
 		return
 	}
 
@@ -87,11 +87,11 @@ func (h *AdminHandler) ReviewReport(c *gin.Context) {
 		SET status = ?, reviewed_by = ?, reviewed_at = datetime('now')
 		WHERE id = ?`, in.Status, adminID, id)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "no se pudo actualizar el reporte"})
+		respondError(c, http.StatusInternalServerError, "no se pudo actualizar el reporte")
 		return
 	}
 	if n, _ := res.RowsAffected(); n == 0 {
-		c.JSON(http.StatusNotFound, gin.H{"error": "reporte no encontrado"})
+		respondError(c, http.StatusNotFound, "reporte no encontrado")
 		return
 	}
 
@@ -210,7 +210,7 @@ func (h *AdminHandler) UpdateCellScore(c *gin.Context) {
 
 	var in updateCellScoreInput
 	if err := c.ShouldBindJSON(&in); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		respondError(c, http.StatusBadRequest, err.Error())
 		return
 	}
 
@@ -219,7 +219,7 @@ func (h *AdminHandler) UpdateCellScore(c *gin.Context) {
 	// público todavía no refleja.
 	tx, err := h.DB.Begin()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "no se pudo iniciar la transacción"})
+		respondError(c, http.StatusInternalServerError, "no se pudo iniciar la transacción")
 		return
 	}
 	defer tx.Rollback() //nolint:errcheck // no-op si ya hubo Commit
@@ -233,17 +233,17 @@ func (h *AdminHandler) UpdateCellScore(c *gin.Context) {
 			updated_at = excluded.updated_at
 	`, h3Index, in.ScorePct, adminID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "no se pudo guardar el override"})
+		respondError(c, http.StatusInternalServerError, "no se pudo guardar el override")
 		return
 	}
 
 	if err := recomputeCellAggregate(tx, h3Index); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "no se pudo aplicar el override: " + err.Error()})
+		respondError(c, http.StatusInternalServerError, "no se pudo aplicar el override: " + err.Error())
 		return
 	}
 
 	if err := tx.Commit(); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "no se pudo confirmar el override"})
+		respondError(c, http.StatusInternalServerError, "no se pudo confirmar el override")
 		return
 	}
 
@@ -261,28 +261,28 @@ func (h *AdminHandler) RevertCellScore(c *gin.Context) {
 	// recalcular cell_agg deben quedar atómicos.
 	tx, err := h.DB.Begin()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "no se pudo iniciar la transacción"})
+		respondError(c, http.StatusInternalServerError, "no se pudo iniciar la transacción")
 		return
 	}
 	defer tx.Rollback() //nolint:errcheck // no-op si ya hubo Commit
 
 	res, err := tx.Exec(`DELETE FROM cell_overrides WHERE h3_index = ?`, h3Index)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "no se pudo revertir el override"})
+		respondError(c, http.StatusInternalServerError, "no se pudo revertir el override")
 		return
 	}
 	if n, _ := res.RowsAffected(); n == 0 {
-		c.JSON(http.StatusNotFound, gin.H{"error": "esa celda no tiene un override activo"})
+		respondError(c, http.StatusNotFound, "esa celda no tiene un override activo")
 		return
 	}
 
 	if err := recomputeCellAggregate(tx, h3Index); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "no se pudo recalcular la celda: " + err.Error()})
+		respondError(c, http.StatusInternalServerError, "no se pudo recalcular la celda: " + err.Error())
 		return
 	}
 
 	if err := tx.Commit(); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "no se pudo confirmar el revert"})
+		respondError(c, http.StatusInternalServerError, "no se pudo confirmar el revert")
 		return
 	}
 
@@ -302,12 +302,12 @@ func (h *AdminHandler) DeleteCell(c *gin.Context) {
 		SET status = 'rejected', reviewed_by = ?, reviewed_at = datetime('now')
 		WHERE h3_index = ? AND status = 'approved'`, adminID, h3Index)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "no se pudo revocar los reportes de la celda"})
+		respondError(c, http.StatusInternalServerError, "no se pudo revocar los reportes de la celda")
 		return
 	}
 	n, _ := res.RowsAffected()
 	if n == 0 {
-		c.JSON(http.StatusNotFound, gin.H{"error": "no hay celda activa con ese h3_index"})
+		respondError(c, http.StatusNotFound, "no hay celda activa con ese h3_index")
 		return
 	}
 
@@ -332,7 +332,7 @@ func (h *AdminHandler) ExportCSV(c *gin.Context) {
 		FROM cell_agg ORDER BY h3_index
 	`)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "no se pudo exportar"})
+		respondError(c, http.StatusInternalServerError, "no se pudo exportar")
 		return
 	}
 	defer rows.Close()

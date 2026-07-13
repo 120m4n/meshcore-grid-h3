@@ -44,7 +44,7 @@ func (h *InviteHandler) Generate(c *gin.Context) {
 
 	code, err := generateInviteCode()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "no se pudo generar el código"})
+		respondError(c, http.StatusInternalServerError, "no se pudo generar el código")
 		return
 	}
 	now := time.Now().UTC()
@@ -58,7 +58,7 @@ func (h *InviteHandler) Generate(c *gin.Context) {
 		code, adminID, createdAt, expiresAt,
 	)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "no se pudo guardar el código"})
+		respondError(c, http.StatusInternalServerError, "no se pudo guardar el código")
 		return
 	}
 
@@ -79,7 +79,7 @@ func (h *InviteHandler) List(c *gin.Context) {
 		FROM invite_codes ORDER BY created_at DESC
 	`)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "no se pudo consultar los códigos"})
+		respondError(c, http.StatusInternalServerError, "no se pudo consultar los códigos")
 		return
 	}
 	defer rows.Close()
@@ -114,7 +114,7 @@ type validateInput struct {
 func (h *InviteHandler) Validate(c *gin.Context) {
 	var in validateInput
 	if err := c.ShouldBindJSON(&in); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		respondError(c, http.StatusBadRequest, err.Error())
 		return
 	}
 	code := strings.ToUpper(strings.TrimSpace(in.Code))

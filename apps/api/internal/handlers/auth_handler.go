@@ -33,7 +33,7 @@ type registerInput struct {
 func (h *AuthHandler) Register(c *gin.Context) {
 	var in registerInput
 	if err := c.ShouldBindJSON(&in); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		respondError(c, http.StatusBadRequest, err.Error())
 		return
 	}
 	if in.Website != "" {
@@ -45,7 +45,7 @@ func (h *AuthHandler) Register(c *gin.Context) {
 
 	hash, err := auth.HashPassword(in.Password)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "no se pudo procesar la contraseña"})
+		respondError(c, http.StatusInternalServerError, "no se pudo procesar la contraseña")
 		return
 	}
 
@@ -54,7 +54,7 @@ func (h *AuthHandler) Register(c *gin.Context) {
 
 	tx, err := h.DB.Begin()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "no se pudo iniciar el registro"})
+		respondError(c, http.StatusInternalServerError, "no se pudo iniciar el registro")
 		return
 	}
 	defer tx.Rollback()
@@ -65,15 +65,15 @@ func (h *AuthHandler) Register(c *gin.Context) {
 		`SELECT expires_at, used_at FROM invite_codes WHERE code = ?`, code,
 	).Scan(&expiresAt, &usedAt)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "código de invitación inválido"})
+		respondError(c, http.StatusBadRequest, "código de invitación inválido")
 		return
 	}
 	if usedAt.Valid {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "código de invitación ya utilizado"})
+		respondError(c, http.StatusBadRequest, "código de invitación ya utilizado")
 		return
 	}
 	if expiresAt < now {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "código de invitación expirado"})
+		respondError(c, http.StatusBadRequest, "código de invitación expirado")
 		return
 	}
 
@@ -83,7 +83,7 @@ func (h *AuthHandler) Register(c *gin.Context) {
 		id, in.Email, hash, in.DisplayName,
 	)
 	if err != nil {
-		c.JSON(http.StatusConflict, gin.H{"error": "el email ya está registrado"})
+		respondError(c, http.StatusConflict, "el email ya está registrado")
 		return
 	}
 
@@ -96,22 +96,22 @@ func (h *AuthHandler) Register(c *gin.Context) {
 		id, now, code,
 	)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "no se pudo consumir el código de invitación"})
+		respondError(c, http.StatusInternalServerError, "no se pudo consumir el código de invitación")
 		return
 	}
 	if n, _ := res.RowsAffected(); n == 0 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "código de invitación ya utilizado"})
+		respondError(c, http.StatusBadRequest, "código de invitación ya utilizado")
 		return
 	}
 
 	if err := tx.Commit(); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "no se pudo completar el registro"})
+		respondError(c, http.StatusInternalServerError, "no se pudo completar el registro")
 		return
 	}
 
 	token, err := auth.IssueToken(h.Cfg.JWTSecret, id, "user")
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "no se pudo generar el token"})
+		respondError(c, http.StatusInternalServerError, "no se pudo generar el token")
 		return
 	}
 
@@ -126,7 +126,7 @@ type loginInput struct {
 func (h *AuthHandler) Login(c *gin.Context) {
 	var in loginInput
 	if err := c.ShouldBindJSON(&in); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		respondError(c, http.StatusBadRequest, err.Error())
 		return
 	}
 
@@ -135,13 +135,13 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		`SELECT id, password_hash, role FROM users WHERE email = ?`, in.Email,
 	).Scan(&id, &hash, &role)
 	if err != nil || !auth.CheckPassword(hash, in.Password) {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "credenciales inválidas"})
+		respondError(c, http.StatusUnauthorized, "credenciales inválidas")
 		return
 	}
 
 	token, err := auth.IssueToken(h.Cfg.JWTSecret, id, role)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "no se pudo generar el token"})
+		respondError(c, http.StatusInternalServerError, "no se pudo generar el token")
 		return
 	}
 
@@ -156,7 +156,7 @@ func (h *AuthHandler) Me(c *gin.Context) {
 		`SELECT email, display_name, role FROM users WHERE id = ?`, userID,
 	).Scan(&email, &displayName, &role)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "usuario no encontrado"})
+		respondError(c, http.StatusNotFound, "usuario no encontrado")
 		return
 	}
 

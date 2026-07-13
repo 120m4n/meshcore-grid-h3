@@ -23,13 +23,13 @@ type ReportHandler struct {
 func (h *ReportHandler) Create(c *gin.Context) {
 	var in models.CreateReportInput
 	if err := c.ShouldBindJSON(&in); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		respondError(c, http.StatusBadRequest, err.Error())
 		return
 	}
 
 	lat, lon, err := h3util.ResolveLatLon(in.Lat, in.Lon, in.PlusCode)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "coordenadas o plus code inválidos"})
+		respondError(c, http.StatusBadRequest, "coordenadas o plus code inválidos")
 		return
 	}
 
@@ -53,7 +53,7 @@ func (h *ReportHandler) Create(c *gin.Context) {
 		userID, in.SignalQuality, in.Message,
 	)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "no se pudo guardar el reporte"})
+		respondError(c, http.StatusInternalServerError, "no se pudo guardar el reporte")
 		return
 	}
 
