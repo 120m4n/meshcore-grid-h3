@@ -15,6 +15,7 @@ services:
       JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET (ver infra/.env.prod.example)}
       H3_RESOLUTION: ${H3_RESOLUTION:-8}
       WEB_ORIGIN: ${WEB_ORIGIN:?Set WEB_ORIGIN (ver infra/.env.prod.example)}
+      TZ: America/Bogota
 
   web:
     image: ghcr.io/${IMAGE_OWNER:?Set IMAGE_OWNER (ver infra/.env.prod.example)}/meshcore-web:${IMAGE_TAG:-latest}
@@ -27,6 +28,8 @@ services:
       - "${WEB_PORT:-8081}:80"
     depends_on:
       - api
+    environment:
+      TZ: America/Bogota
 
 networks:
   default:

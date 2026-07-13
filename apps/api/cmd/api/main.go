@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	_ "time/tzdata" // embebe la IANA tz DB en el binario: TZ=America/Bogota (ver docker-compose) funciona sin depender de tzdata instalado en la imagen final
 
 	"meshcore-map/api/internal/config"
 	"meshcore-map/api/internal/db"

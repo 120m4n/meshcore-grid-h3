@@ -15,6 +15,7 @@ services:
       JWT_SECRET: ${JWT_SECRET:-change-me-in-production}
       H3_RESOLUTION: ${H3_RESOLUTION:-8}
       WEB_ORIGIN: ${WEB_ORIGIN:-http://localhost:8081}
+      TZ: America/Bogota
 
   web:
     build:
@@ -26,6 +27,8 @@ services:
       - "8081:80"
     depends_on:
       - api
+    environment:
+      TZ: America/Bogota
 
 networks:
   default:
