@@ -557,4 +557,7 @@ th.sortable:hover { color: var(--text); }
   .topbar nav { flex: 1 1 100%; }
   .topbar nav a, .topbar nav button { flex: 1 1 auto; text-align: center; }
   .legend { left: 0.6rem; right: 0.6rem; bottom: 0.9rem; }
+  /* "Celda H3" (h3_index crudo) no aporta en pantallas angostas —
+     plus_code ya identifica la celda de forma más legible/tipeable. */
+  #cells-table .col-h3 { display: none; }
 }

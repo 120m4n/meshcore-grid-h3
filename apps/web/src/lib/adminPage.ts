@@ -86,7 +86,7 @@ function renderCellsTable(cells: CellAggregate[]) {
            <button class="btn-danger btn-sm" data-action="delete" data-h3="${cell.h3_index}">Eliminar</button>
          </div>`;
     tr.innerHTML = `
-      <td>${cell.h3_index}</td>
+      <td class="col-h3">${cell.h3_index}</td>
       <td>${cell.plus_code}</td>
       <td>${scoreCell}</td>
       <td>${cell.report_count}</td>
