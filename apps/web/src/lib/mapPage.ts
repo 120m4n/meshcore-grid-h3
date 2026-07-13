@@ -4,6 +4,7 @@ import { OpenLocationCode } from 'open-location-code';
 import { getCells, getCellOrigins } from './api.ts';
 import { colorForScore } from './colors.ts';
 import { showToast } from './toast.ts';
+import { formatDateTimeBogota } from './datetime.ts';
 import { CENTER, SANTANDER_BOUNDS, MIN_ZOOM, MAX_ZOOM, H3_RESOLUTION } from './mapBounds.ts';
 
 const olc = new OpenLocationCode();
@@ -115,7 +116,7 @@ async function loadCells() {
         <strong>Celda:</strong> ${cell.h3_index}<br/>
         <strong>Conectividad:</strong> ${cell.score_pct.toFixed(0)}%<br/>
         <strong>Reportes:</strong> ${cell.report_count}<br/>
-        <strong>Último reporte:</strong> ${new Date(cell.last_report_at).toLocaleString('es-CO')}
+        <strong>Último reporte:</strong> ${formatDateTimeBogota(cell.last_report_at)}
       `);
       // evitar que el clic sobre una celda real también dispare el
       // creador/eliminador de celdas de prueba del mapa
@@ -217,7 +218,7 @@ function renderTestCell(cell: TestCell) {
 
   polygon.bindPopup(`
     <strong>Celda de prueba (temporal):</strong> ${cell.h3_index}<br/>
-    <strong>Creada:</strong> ${new Date(cell.created_at).toLocaleString('es-CO')}<br/>
+    <strong>Creada:</strong> ${formatDateTimeBogota(cell.created_at)}<br/>
     <em>Clic de nuevo sobre la celda para quitarla</em>
   `);
   polygon.on('click', (e) => {

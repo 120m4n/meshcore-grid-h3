@@ -1,6 +1,7 @@
 import { getPendingReports, reviewReport, getCells, deleteCell, updateCellScore, revertCellScore, generateInviteCode, listInviteCodes } from './api.ts';
 import type { CellAggregate } from './api.ts';
 import { showToast } from './toast.ts';
+import { formatDateTimeBogota, parseUtcDate } from './datetime.ts';
 
 const token = localStorage.getItem('token');
 const role = localStorage.getItem('role');
@@ -25,7 +26,7 @@ async function load() {
         <td>${r.reporter_display_name || 'Anónimo'} <span class="hint">(cuenta: ${r.reporter_name})</span></td>
         <td>${r.signal_quality}</td>
         <td>${r.message || '-'}</td>
-        <td>${new Date(r.created_at).toLocaleString('es-CO')}</td>
+        <td>${formatDateTimeBogota(r.created_at)}</td>
         <td>
           <div class="table-actions">
             <button class="btn-secondary btn-sm" data-id="${r.id}" data-action="approved">Aprobar</button>
@@ -81,7 +82,7 @@ function renderCellsTable(cells: CellAggregate[]) {
       <td>${cell.plus_code}</td>
       <td>${scoreCell}</td>
       <td>${cell.report_count}</td>
-      <td>${new Date(cell.last_report_at).toLocaleString('es-CO')}</td>
+      <td>${formatDateTimeBogota(cell.last_report_at)}</td>
       <td>${actionsCell}</td>`;
     cellsTbody.appendChild(tr);
   }
@@ -173,7 +174,7 @@ const inviteCodesStatus = document.getElementById('invite-codes-status')!;
 // — el backend no guarda un campo "status" separado, son derivados.
 function inviteCodeState(code: { used_at?: string; expires_at: string }): 'usado' | 'expirado' | 'activo' {
   if (code.used_at) return 'usado';
-  if (new Date(code.expires_at) < new Date()) return 'expirado';
+  if (parseUtcDate(code.expires_at) < new Date()) return 'expirado';
   return 'activo';
 }
 
@@ -188,10 +189,10 @@ async function loadInviteCodes() {
       tr.innerHTML = `
         <td>${code.code}</td>
         <td>${state}</td>
-        <td>${new Date(code.created_at).toLocaleString('es-CO')}</td>
+        <td>${formatDateTimeBogota(code.created_at)}</td>
         <td>${state === 'usado'
-          ? new Date(code.used_at!).toLocaleString('es-CO')
-          : new Date(code.expires_at).toLocaleString('es-CO')}</td>`;
+          ? formatDateTimeBogota(code.used_at!)
+          : formatDateTimeBogota(code.expires_at)}</td>`;
       inviteCodesTbody.appendChild(tr);
     }
   } catch (err: any) {
