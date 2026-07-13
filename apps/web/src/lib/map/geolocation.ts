@@ -1,0 +1,41 @@
+import L from 'leaflet';
+import { userLocationLayer } from './setup.ts';
+
+export function getCurrentGeoPosition(): Promise<GeolocationPosition> {
+  return new Promise((resolve, reject) => {
+    navigator.geolocation.getCurrentPosition(resolve, reject, {
+      enableHighAccuracy: true,
+      timeout: 10000,
+    });
+  });
+}
+
+// Punto GPS del usuario: dibuja al instante cuando se valida
+// geolocalización (activación de modo prueba y cada relectura durante
+// un click). Círculo exterior = radio de precisión reportado por el
+// navegador (pos.coords.accuracy, en metros) — cuanto más grande, más
+// incierta es la posición.
+export function renderUserLocation(pos: GeolocationPosition) {
+  const { latitude, longitude, accuracy } = pos.coords;
+  userLocationLayer.clearLayers();
+  // interactive: false — el punto suele caer justo sobre la celda real
+  // donde el usuario está parado (es el caso de uso central del modo
+  // prueba); sin esto, el dot capturaba el click y la celda de abajo
+  // nunca llegaba a recibirlo.
+  L.circle([latitude, longitude], {
+    radius: Math.abs(accuracy),
+    color: '#1a73e8',
+    weight: 1.5,
+    fillColor: '#ffffff',
+    fillOpacity: 0.35,
+    interactive: false,
+  }).addTo(userLocationLayer);
+  L.circleMarker([latitude, longitude], {
+    radius: 7,
+    color: '#ffffff',
+    weight: 2,
+    fillColor: '#1a73e8',
+    fillOpacity: 1,
+    interactive: false,
+  }).addTo(userLocationLayer);
+}
