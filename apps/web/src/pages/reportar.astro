@@ -43,8 +43,8 @@ import '../styles/global.css';
         </div>
 
         <div id="coords-fields">
-          <label>Latitud <input type="number" step="any" id="lat" placeholder="7.1193" /></label>
-          <label>Longitud <input type="number" step="any" id="lon" placeholder="-73.1227" /></label>
+          <label>Latitud <input type="number" step="any" min="-90" max="90" id="lat" placeholder="7.1193" /></label>
+          <label>Longitud <input type="number" step="any" min="-180" max="180" id="lon" placeholder="-73.1227" /></label>
           <button type="button" id="btn-geo" class="btn-secondary">Usar mi ubicación</button>
         </div>
 
