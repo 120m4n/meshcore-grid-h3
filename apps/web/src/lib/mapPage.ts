@@ -53,6 +53,10 @@ let testLayer = L.layerGroup().addTo(map);
 let originsLayer = L.layerGroup().addTo(map);
 let userLocationLayer = L.layerGroup().addTo(map);
 const realIndexes = new Set<string>();
+// h3_index -> polígono dibujado, para poder ubicar/enfocar una celda
+// puntual (ver query param "h3", usado por el botón "Ver en mapa" del
+// admin) sin recorrer cellLayer buscando capa por capa.
+const cellPolygons = new Map<string, L.Polygon>();
 
 const CELLS_LAST_FETCH_KEY = 'meshcore:cells-last-fetch';
 
@@ -98,6 +102,7 @@ async function loadCells() {
   cellLayer.clearLayers();
   originsLayer.clearLayers();
   realIndexes.clear();
+  cellPolygons.clear();
   markCellsFetched();
   try {
     const cells = await getCells();
@@ -111,6 +116,7 @@ async function loadCells() {
         fillColor: colorForScore(cell.score_pct),
         fillOpacity: 0.55,
       }).addTo(cellLayer);
+      cellPolygons.set(cell.h3_index, polygon);
 
       polygon.bindPopup(`
         <strong>Celda:</strong> ${cell.h3_index}<br/>
@@ -153,9 +159,26 @@ async function loadCells() {
     if (bounds) {
       map.fitBounds(bounds, { padding: [24, 24] });
     }
+    focusRequestedCell();
   } catch (err) {
     console.error('Error cargando celdas:', err);
   }
+}
+
+// Botón "Ver en mapa" del admin (adminPage.ts) abre esta página con
+// ?h3=<h3_index> en una pestaña nueva — enfoca esa celda puntual y abre
+// su popup. Si ya no existe entre las celdas reales (borrada/desaprobada
+// desde que se generó el link), avisa en vez de fallar en silencio.
+function focusRequestedCell() {
+  const requestedH3 = new URLSearchParams(location.search).get('h3');
+  if (!requestedH3) return;
+  const target = cellPolygons.get(requestedH3);
+  if (!target) {
+    showToast('Celda no encontrada en el mapa (puede haber sido eliminada)', 'error');
+    return;
+  }
+  map.fitBounds(target.getBounds(), { padding: [24, 24], maxZoom: 15 });
+  target.openPopup();
 }
 
 async function showCellOrigins(h3Index: string) {

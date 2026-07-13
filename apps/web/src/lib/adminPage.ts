@@ -77,10 +77,12 @@ function renderCellsTable(cells: CellAggregate[]) {
       : `${Math.round(cell.score_pct)}%${cell.manual_override ? ' <span class="hint" title="Fijado a mano por un admin">(manual)</span>' : ''}`;
     const actionsCell = isEditing
       ? `<div class="table-actions">
+           <button class="btn-secondary btn-sm" data-action="locate" data-h3="${cell.h3_index}">Ver en mapa</button>
            <button class="btn-secondary btn-sm" data-action="save" data-h3="${cell.h3_index}">Guardar</button>
            <button class="btn-secondary btn-sm" data-action="cancel" data-h3="${cell.h3_index}">Cancelar</button>
          </div>`
       : `<div class="table-actions">
+           <button class="btn-secondary btn-sm" data-action="locate" data-h3="${cell.h3_index}">Ver en mapa</button>
            <button class="btn-secondary btn-sm" data-action="edit" data-h3="${cell.h3_index}">Editar</button>
            ${cell.manual_override ? `<button class="btn-secondary btn-sm" data-action="revert" data-h3="${cell.h3_index}">Revertir a automático</button>` : ''}
            <button class="btn-danger btn-sm" data-action="delete" data-h3="${cell.h3_index}">Eliminar</button>
@@ -166,6 +168,11 @@ cellsTbody.addEventListener('click', async (e) => {
   const h3Index = btn.dataset.h3!;
   const action = btn.dataset.action;
 
+  if (action === 'locate') {
+    // pestaña nueva: no perder la sesión de moderación en esta pestaña
+    window.open(`/?h3=${encodeURIComponent(h3Index)}`, '_blank');
+    return;
+  }
   if (action === 'edit') {
     editingH3 = h3Index;
     renderCellsTable(currentCells);
