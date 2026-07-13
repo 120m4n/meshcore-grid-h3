@@ -40,7 +40,12 @@ import '../../styles/global.css';
       <table id="cells-table">
         <thead>
           <tr>
-            <th>Celda H3</th><th>Plus code</th><th>Señal</th><th>Reportes</th><th>Última actualización</th><th>Acciones</th>
+            <th class="sortable" data-sort="h3_index">Celda H3 <span class="sort-indicator"></span></th>
+            <th class="sortable" data-sort="plus_code">Plus code <span class="sort-indicator"></span></th>
+            <th class="sortable" data-sort="score_pct">Señal <span class="sort-indicator"></span></th>
+            <th>Reportes</th>
+            <th class="sortable" data-sort="last_report_at">Última actualización <span class="sort-indicator"></span></th>
+            <th>Acciones</th>
           </tr>
         </thead>
         <tbody></tbody>

@@ -538,6 +538,9 @@ button[type="submit"]:disabled { opacity: 0.5; cursor: not-allowed; }
 table { width: 100%; border-collapse: collapse; margin: 1rem; }
 th, td { border: 1px solid var(--border); padding: 0.5rem; text-align: left; font-size: 0.9rem; color: var(--text); }
 th { font-family: var(--font-display); font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-dim); }
+th.sortable { cursor: pointer; user-select: none; }
+th.sortable:hover { color: var(--text); }
+.sort-indicator { font-size: 0.7rem; }
 
 /* ============ mobile-first: topbar colapsa en pantallas angostas ============ */
 @media (max-width: 640px) {

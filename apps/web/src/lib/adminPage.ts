@@ -1,5 +1,5 @@
 import { getPendingReports, reviewReport, getCellsPage, deleteCell, updateCellScore, revertCellScore, generateInviteCode, listInviteCodes } from './api.ts';
-import type { CellAggregate } from './api.ts';
+import type { CellAggregate, CellSortField, SortOrder } from './api.ts';
 import { showToast } from './toast.ts';
 import { formatDateTimeBogota, parseUtcDate } from './datetime.ts';
 
@@ -62,6 +62,8 @@ const CELLS_PAGE_SIZE = 100;
 let currentCells: CellAggregate[] = []; // última página recibida — reusada al re-renderizar (editar/cancelar) sin refetch
 let currentPage = 1;
 let currentTotal = 0;
+let currentSortBy: CellSortField = 'h3_index';
+let currentOrder: SortOrder = 'asc';
 // h3_index de la fila en edición inline (una a la vez) — null = ninguna.
 let editingH3: string | null = null;
 
@@ -100,7 +102,13 @@ function renderCellsTable(cells: CellAggregate[]) {
 // cargada en el cliente daría resultados incompletos/confusos.
 async function loadCells(page: number) {
   try {
-    const result = await getCellsPage({ page, pageSize: CELLS_PAGE_SIZE, q: cellsFilter.value.trim() });
+    const result = await getCellsPage({
+      page,
+      pageSize: CELLS_PAGE_SIZE,
+      q: cellsFilter.value.trim(),
+      sortBy: currentSortBy,
+      order: currentOrder,
+    });
     currentCells = result.items;
     currentPage = result.page;
     currentTotal = result.total;
@@ -119,6 +127,30 @@ function updateCellsPagination() {
   cellsPrevBtn.disabled = currentPage <= 1;
   cellsNextBtn.disabled = currentPage >= totalPages;
 }
+
+// Headers clickeables de "Celdas activas" (data-sort) — clic en la misma
+// columna invierte el orden, clic en una columna nueva vuelve a asc.
+const cellsSortHeaders = document.querySelectorAll<HTMLTableCellElement>('#cells-table th.sortable');
+function updateSortIndicators() {
+  cellsSortHeaders.forEach((th) => {
+    const indicator = th.querySelector('.sort-indicator')!;
+    indicator.textContent = th.dataset.sort === currentSortBy ? (currentOrder === 'asc' ? '▲' : '▼') : '';
+  });
+}
+cellsSortHeaders.forEach((th) => {
+  th.addEventListener('click', () => {
+    const field = th.dataset.sort as CellSortField;
+    if (currentSortBy === field) {
+      currentOrder = currentOrder === 'asc' ? 'desc' : 'asc';
+    } else {
+      currentSortBy = field;
+      currentOrder = 'asc';
+    }
+    updateSortIndicators();
+    loadCells(1);
+  });
+});
+updateSortIndicators();
 
 let cellsFilterTimeout: ReturnType<typeof setTimeout>;
 cellsFilter.addEventListener('input', () => {

@@ -48,10 +48,21 @@ export interface CellPage {
 // "Celdas activas" del admin. Sin query param "page" (getCells arriba),
 // el mismo endpoint devuelve el array plano completo que necesita el
 // mapa público.
-export function getCellsPage(params: { page: number; pageSize?: number; q?: string }): Promise<CellPage> {
+export type CellSortField = 'h3_index' | 'plus_code' | 'score_pct' | 'last_report_at';
+export type SortOrder = 'asc' | 'desc';
+
+export function getCellsPage(params: {
+  page: number;
+  pageSize?: number;
+  q?: string;
+  sortBy?: CellSortField;
+  order?: SortOrder;
+}): Promise<CellPage> {
   const search = new URLSearchParams({ page: String(params.page) });
   if (params.pageSize) search.set('page_size', String(params.pageSize));
   if (params.q) search.set('q', params.q);
+  if (params.sortBy) search.set('sort_by', params.sortBy);
+  if (params.order) search.set('order', params.order);
   return apiFetch(`/api/v1/cells?${search.toString()}`);
 }
 

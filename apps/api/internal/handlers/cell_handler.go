@@ -3,6 +3,7 @@ package handlers
 import (
 	"database/sql"
 	"net/http"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -14,6 +15,16 @@ import (
 )
 
 const defaultCellPageSize = 100
+
+// columnas ordenables de la tabla "Celdas activas" — plus_code no es
+// columna SQL (se calcula desde h3_index), así que el ordenamiento se
+// hace en Go sobre el slice ya armado, junto con el filtro por q.
+var cellSortFields = map[string]func(a, b models.CellAggregate) bool{
+	"h3_index":       func(a, b models.CellAggregate) bool { return a.H3Index < b.H3Index },
+	"plus_code":      func(a, b models.CellAggregate) bool { return a.PlusCode < b.PlusCode },
+	"score_pct":      func(a, b models.CellAggregate) bool { return a.ScorePct < b.ScorePct },
+	"last_report_at": func(a, b models.CellAggregate) bool { return a.LastReportAt < b.LastReportAt },
+}
 
 type CellHandler struct {
 	DB *sql.DB
@@ -30,11 +41,11 @@ type CellHandler struct {
 // Sin query param "page", responde el array plano completo de siempre
 // (el mapa público lo llama así — necesita TODAS las celdas para pintar
 // los hexágonos, nunca solo una página). Con "page", filtra por "q"
-// (substring de plus_code, usado por el filtro de la tabla admin) y
-// pagina, devolviendo models.CellPage. El total de celdas activas de una
-// red mesh regional es chico, así que filtrar/paginar en memoria en Go
-// es más simple que armar el filtro (plus_code no es columna SQL) en la
-// query.
+// (substring de plus_code, usado por el filtro de la tabla admin), ordena
+// por sort_by/order (default h3_index/asc; ver cellSortFields) y pagina,
+// devolviendo models.CellPage. El total de celdas activas de una red mesh
+// regional es chico, así que filtrar/ordenar/paginar en memoria en Go es
+// más simple que armarlo en SQL (plus_code no es columna de la tabla).
 func (h *CellHandler) List(c *gin.Context) {
 	rows, err := h.DB.Query(`
 		SELECT c.h3_index, c.score_pct, c.report_count, c.last_report_at,
@@ -93,6 +104,24 @@ func (h *CellHandler) List(c *gin.Context) {
 		}
 		cells = filtered
 	}
+
+	sortBy := c.DefaultQuery("sort_by", "h3_index")
+	less, ok := cellSortFields[sortBy]
+	if !ok {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "sort_by inválido"})
+		return
+	}
+	order := c.DefaultQuery("order", "asc")
+	if order != "asc" && order != "desc" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "order debe ser asc o desc"})
+		return
+	}
+	sort.SliceStable(cells, func(i, j int) bool {
+		if order == "desc" {
+			return less(cells[j], cells[i])
+		}
+		return less(cells[i], cells[j])
+	})
 
 	total := len(cells)
 	start := min((page-1)*pageSize, total)
