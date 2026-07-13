@@ -122,9 +122,20 @@ func (h *AdminHandler) ReviewReport(c *gin.Context) {
 // reportes reales (son datos informativos, no lo que se está corrigiendo).
 // Una celda overridden con 0 reportes reales NO se borra: el admin la
 // quiso visible con ese score a propósito.
-func recomputeCellAggregate(sqlDB *sql.DB, h3Index string) error {
+// sqlExecutor abstrae *sql.DB y *sql.Tx (ambos implementan Exec/QueryRow
+// con esta firma) — recomputeCellAggregate corre suelta en ReviewReport
+// (que tolera un fallo de recálculo sin deshacer el estado del reporte,
+// ver comentario ahí) y dentro de una transacción en
+// UpdateCellScore/RevertCellScore, donde el override y el recálculo
+// deben quedar atómicos.
+type sqlExecutor interface {
+	Exec(query string, args ...any) (sql.Result, error)
+	QueryRow(query string, args ...any) *sql.Row
+}
+
+func recomputeCellAggregate(db sqlExecutor, h3Index string) error {
 	var overrideScore sql.NullFloat64
-	err := sqlDB.QueryRow(`SELECT score_pct FROM cell_overrides WHERE h3_index = ?`, h3Index).Scan(&overrideScore)
+	err := db.QueryRow(`SELECT score_pct FROM cell_overrides WHERE h3_index = ?`, h3Index).Scan(&overrideScore)
 	if err != nil && err != sql.ErrNoRows {
 		return err
 	}
@@ -135,7 +146,7 @@ func recomputeCellAggregate(sqlDB *sql.DB, h3Index string) error {
 		reportCount  int
 		lastReportAt sql.NullString
 	)
-	err = sqlDB.QueryRow(`
+	err = db.QueryRow(`
 		SELECT
 			AVG(CASE signal_quality
 				WHEN 'sin_cobertura' THEN 0
@@ -153,7 +164,7 @@ func recomputeCellAggregate(sqlDB *sql.DB, h3Index string) error {
 	}
 
 	if reportCount == 0 && !overridden {
-		_, err := sqlDB.Exec(`DELETE FROM cell_agg WHERE h3_index = ?`, h3Index)
+		_, err := db.Exec(`DELETE FROM cell_agg WHERE h3_index = ?`, h3Index)
 		return err
 	}
 
@@ -173,7 +184,7 @@ func recomputeCellAggregate(sqlDB *sql.DB, h3Index string) error {
 		return err
 	}
 
-	_, err = sqlDB.Exec(`
+	_, err = db.Exec(`
 		INSERT INTO cell_agg (h3_index, score_pct, report_count, last_report_at, geom_wkt)
 		VALUES (?, ?, ?, ?, ?)
 		ON CONFLICT(h3_index) DO UPDATE SET
@@ -203,7 +214,17 @@ func (h *AdminHandler) UpdateCellScore(c *gin.Context) {
 		return
 	}
 
-	_, err := h.DB.Exec(`
+	// El override y el recálculo de cell_agg quedan atómicos: si el
+	// recompute falla, no queremos un override guardado que el mapa
+	// público todavía no refleja.
+	tx, err := h.DB.Begin()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "no se pudo iniciar la transacción"})
+		return
+	}
+	defer tx.Rollback() //nolint:errcheck // no-op si ya hubo Commit
+
+	_, err = tx.Exec(`
 		INSERT INTO cell_overrides (h3_index, score_pct, updated_by, updated_at)
 		VALUES (?, ?, ?, datetime('now'))
 		ON CONFLICT(h3_index) DO UPDATE SET
@@ -216,8 +237,13 @@ func (h *AdminHandler) UpdateCellScore(c *gin.Context) {
 		return
 	}
 
-	if err := recomputeCellAggregate(h.DB, h3Index); err != nil {
+	if err := recomputeCellAggregate(tx, h3Index); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "no se pudo aplicar el override: " + err.Error()})
+		return
+	}
+
+	if err := tx.Commit(); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "no se pudo confirmar el override"})
 		return
 	}
 
@@ -231,7 +257,16 @@ func (h *AdminHandler) UpdateCellScore(c *gin.Context) {
 func (h *AdminHandler) RevertCellScore(c *gin.Context) {
 	h3Index := c.Param("h3_index")
 
-	res, err := h.DB.Exec(`DELETE FROM cell_overrides WHERE h3_index = ?`, h3Index)
+	// Mismo razonamiento que UpdateCellScore: borrar el override y
+	// recalcular cell_agg deben quedar atómicos.
+	tx, err := h.DB.Begin()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "no se pudo iniciar la transacción"})
+		return
+	}
+	defer tx.Rollback() //nolint:errcheck // no-op si ya hubo Commit
+
+	res, err := tx.Exec(`DELETE FROM cell_overrides WHERE h3_index = ?`, h3Index)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "no se pudo revertir el override"})
 		return
@@ -241,8 +276,13 @@ func (h *AdminHandler) RevertCellScore(c *gin.Context) {
 		return
 	}
 
-	if err := recomputeCellAggregate(h.DB, h3Index); err != nil {
+	if err := recomputeCellAggregate(tx, h3Index); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "no se pudo recalcular la celda: " + err.Error()})
+		return
+	}
+
+	if err := tx.Commit(); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "no se pudo confirmar el revert"})
 		return
 	}
 
