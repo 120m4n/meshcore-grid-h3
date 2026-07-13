@@ -14,9 +14,16 @@ import (
 var ErrInvalidInput = errors.New("se requiere lat/lon válidos o un plus code válido")
 
 // ResolveLatLon determina las coordenadas finales a partir de las dos
-// formas de entrada soportadas por el formulario de reporte.
+// formas de entrada soportadas por el formulario de reporte. Cuando
+// viene por coords, se valida el rango GPS estándar acá — es la única
+// entrada de reportes que no está implícitamente acotada (un plus code
+// siempre decodifica a un punto válido); el cliente nunca es confiable
+// para esto.
 func ResolveLatLon(lat, lon *float64, plusCode *string) (float64, float64, error) {
 	if lat != nil && lon != nil {
+		if *lat < -90 || *lat > 90 || *lon < -180 || *lon > 180 {
+			return 0, 0, ErrInvalidInput
+		}
 		return *lat, *lon, nil
 	}
 	if plusCode != nil && *plusCode != "" {
