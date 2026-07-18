@@ -22,9 +22,13 @@ const osmBlack = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}
   attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
   subdomains: 'abcd',
 });
-osmBlack.addTo(map); // default
+const cartoLight = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+  attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
+  subdomains: 'abcd',
+});
+cartoLight.addTo(map); // default
 L.control.layers(
-  { 'OSM Black': osmBlack, 'OSM': osmLight },
+  { 'CARTO Light': cartoLight, 'OSM Black': osmBlack, 'OSM': osmLight },
   undefined,
   { position: 'topright' }
 ).addTo(map);
