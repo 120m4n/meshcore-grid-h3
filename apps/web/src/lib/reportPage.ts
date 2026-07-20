@@ -50,6 +50,19 @@ document.getElementById('btn-geo')!.addEventListener('click', () => {
   });
 });
 
+// pegar "lat,lon" en el campo de latitud separa ambos valores en sus
+// respectivos campos, en vez de dejar el texto crudo en un input numérico.
+const LAT_LON_PASTE = /^(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)$/;
+latInput.addEventListener('paste', (e) => {
+  const text = e.clipboardData?.getData('text')?.trim();
+  if (!text) return;
+  const match = text.match(LAT_LON_PASTE);
+  if (!match) return;
+  e.preventDefault();
+  latInput.value = match[1];
+  lonInput.value = match[2];
+});
+
 // ============ mini-mapa "clic en el mapa" (carga perezosa) ============
 let pickerMap: L.Map | null = null;
 let pickerMarker: L.Marker | null = null;
@@ -131,6 +144,7 @@ document.getElementById('report-form')!.addEventListener('submit', async (e) => 
     await createReport(payload);
     showToast('Reporte enviado. Pendiente de aprobación.', 'success');
     (document.getElementById('report-form') as HTMLFormElement).reset();
+    syncFieldVisibility();
     updateMessageCount();
   } catch (err: any) {
     showToast(err.message || 'No se pudo enviar el reporte.', 'error');
