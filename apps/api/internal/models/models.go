@@ -28,6 +28,16 @@ const (
 	QualityExcelente    SignalQuality = "excelente"
 )
 
+type NetworkType string
+
+const (
+	Net2G          NetworkType = "2g"
+	Net3G          NetworkType = "3g"
+	NetLTE         NetworkType = "lte"
+	Net5G          NetworkType = "5g"
+	NetDesconocido NetworkType = "desconocido"
+)
+
 // QualityScore mapea la calidad de señal a un valor numérico 0..3
 // usado para calcular el porcentaje agregado por celda.
 var QualityScore = map[SignalQuality]float64{
@@ -58,6 +68,7 @@ type Report struct {
 	ReporterName        string        `json:"reporter_name,omitempty"`
 	ReporterDisplayName *string       `json:"reporter_display_name,omitempty"`
 	SignalQuality       SignalQuality `json:"signal_quality"`
+	NetworkType         NetworkType   `json:"network_type"`
 	Message             string        `json:"message,omitempty"`
 	Status              ReportStatus  `json:"status"`
 	ReviewedBy          *string       `json:"reviewed_by,omitempty"`
@@ -98,6 +109,7 @@ type CreateReportInput struct {
 	PlusCode            *string       `json:"plus_code"`
 	ReporterDisplayName *string       `json:"reporter_display_name"`
 	SignalQuality       SignalQuality `json:"signal_quality" binding:"required,oneof=sin_cobertura debil buena excelente"`
+	NetworkType         NetworkType   `json:"network_type" binding:"omitempty,oneof=2g 3g lte 5g desconocido"`
 	Message             string        `json:"message" binding:"max=120"`
 }
 

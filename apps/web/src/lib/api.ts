@@ -127,6 +127,7 @@ export function createReport(input: {
   plus_code?: string;
   reporter_display_name?: string;
   signal_quality: string;
+  network_type?: string;
   message?: string;
 }) {
   return apiFetch('/api/v1/reports', {

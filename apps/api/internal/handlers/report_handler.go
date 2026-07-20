@@ -68,6 +68,17 @@ func (h *ReportHandler) Create(c *gin.Context) {
 		}
 	}
 
+	networkType := in.NetworkType
+	if networkType == "" {
+		networkType = models.NetDesconocido
+	}
+	// best-effort: si falla, el reporte ya quedó guardado; el admin verá
+	// 'desconocido' al no encontrar fila en report_network_types.
+	_, _ = h.DB.Exec(
+		`INSERT INTO report_network_types (report_id, network_type) VALUES (?, ?)`,
+		reportID, networkType,
+	)
+
 	c.JSON(http.StatusCreated, gin.H{
 		"id":       reportID,
 		"h3_index": cellIndex,
