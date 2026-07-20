@@ -113,9 +113,10 @@ document.getElementById('report-form')!.addEventListener('submit', async (e) => 
 
   const payload: Parameters<typeof createReport>[0] = {
     signal_quality: (document.getElementById('signal_quality') as HTMLSelectElement).value,
-    network_type: (document.getElementById('network_type') as HTMLSelectElement).value,
     message: messageInput.value,
   };
+  const networkTypeEl = document.getElementById('network_type') as HTMLSelectElement | null;
+  if (networkTypeEl?.value) payload.network_type = networkTypeEl.value;
   if (displayName) payload.reporter_display_name = displayName;
 
   if (method === 'pluscode') {
