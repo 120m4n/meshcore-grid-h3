@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"database/sql"
+	"log"
 	"net/http"
 	"strings"
 
@@ -66,6 +67,19 @@ func (h *ReportHandler) Create(c *gin.Context) {
 				reportID, name,
 			)
 		}
+	}
+
+	networkType := in.NetworkType
+	if networkType == "" {
+		networkType = models.NetDesconocido
+	}
+	// best-effort: si falla, el reporte ya quedó guardado; el admin verá
+	// 'desconocido' al no encontrar fila en report_network_types.
+	if _, err := h.DB.Exec(
+		`INSERT INTO report_network_types (report_id, network_type) VALUES (?, ?)`,
+		reportID, networkType,
+	); err != nil {
+		log.Printf("WARN report_network_types insert failed for report %s: %v", reportID, err)
 	}
 
 	c.JSON(http.StatusCreated, gin.H{

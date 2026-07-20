@@ -18,6 +18,7 @@ export function initReports() {
           <td>${r.h3_index}</td>
           <td>${r.reporter_display_name || 'Anónimo'} <span class="hint">(cuenta: ${r.reporter_name})</span></td>
           <td>${r.signal_quality}</td>
+          <td>${r.network_type || 'desconocido'}</td>
           <td>${r.message || '-'}</td>
           <td>${formatDateTimeBogota(r.created_at)}</td>
           <td>

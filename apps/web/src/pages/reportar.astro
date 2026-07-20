@@ -7,6 +7,9 @@ import '../styles/global.css';
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="preconnect" href="https://basemaps.cartocdn.com" crossorigin />
+  <link rel="dns-prefetch" href="https://basemaps.cartocdn.com" />
+  <meta name="theme-color" content="#0a1420" />
   <title>Reportar conectividad — MeshCore Santander</title>
 </head>
 <body>
@@ -74,6 +77,15 @@ import '../styles/global.css';
             <option value="debil">Débil</option>
             <option value="buena">Buena</option>
             <option value="excelente" selected>Excelente</option>
+          </select>
+        </label>
+        <label>Tipo de red
+          <select id="network_type">
+            <option value="desconocido">Desconocido</option>
+            <option value="2g">2G</option>
+            <option value="3g">3G</option>
+            <option value="lte">LTE / 4G</option>
+            <option value="5g">5G</option>
           </select>
         </label>
         <label>Observación (opcional)
