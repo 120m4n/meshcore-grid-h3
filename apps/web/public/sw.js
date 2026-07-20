@@ -65,7 +65,7 @@ function isShellRequest(url) {
 function isCellsRequest(url) {
   try {
     const { pathname } = new URL(url);
-    return pathname === '/api/v1/cells' || pathname.startsWith('/api/v1/cells?');
+    return pathname === '/api/v1/cells';
   } catch {
     return false;
   }
@@ -112,7 +112,7 @@ async function staleWhileRevalidate(request, cacheName, maxAgeMs) {
 
   if (!isStale && cached) {
     // Refresca en background sin bloquear la respuesta.
-    networkFetch; // eslint-disable-line no-unused-expressions
+    void networkFetch;
     return cached;
   }
 
