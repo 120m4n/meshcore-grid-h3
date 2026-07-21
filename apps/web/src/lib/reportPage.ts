@@ -8,6 +8,7 @@ import markerShadow from 'leaflet/dist/images/marker-shadow.png?url';
 import { createReport } from './api.ts';
 import { CENTER, SANTANDER_BOUNDS, MIN_ZOOM, MAX_ZOOM } from './mapBounds.ts';
 import { showToast } from './toast.ts';
+import { watchFilteredPosition } from './geoWatch.ts';
 
 // Vite reescribe las rutas de assets al bundlear — el _getIconUrl por
 // defecto de Leaflet asume rutas relativas al HTML servido y rompe en
@@ -29,6 +30,17 @@ const MESSAGE_MAX = 120;
 const latInput = document.getElementById('lat') as HTMLInputElement;
 const lonInput = document.getElementById('lon') as HTMLInputElement;
 
+// ============ ubicación en vivo (declarado antes de syncFieldVisibility, que lo usa) ============
+const btnGeo = document.getElementById('btn-geo') as HTMLButtonElement;
+const BTN_GEO_LABEL = btnGeo.textContent!;
+let stopGeoWatch: (() => void) | null = null;
+
+function stopLiveLocation() {
+  stopGeoWatch?.();
+  stopGeoWatch = null;
+  btnGeo.textContent = BTN_GEO_LABEL;
+}
+
 // ============ toggle entre los 3 métodos de ubicación ============
 const radios = document.querySelectorAll<HTMLInputElement>('input[name="input_method"]');
 function currentMethod(): string {
@@ -40,15 +52,33 @@ function syncFieldVisibility() {
   document.getElementById('pluscode-fields')!.hidden = method !== 'pluscode';
   document.getElementById('mapclick-fields')!.hidden = method !== 'mapclick';
   if (method === 'mapclick') ensurePickerMap();
+  if (method !== 'coords') stopLiveLocation();
 }
 radios.forEach((r) => r.addEventListener('change', syncFieldVisibility));
 
-document.getElementById('btn-geo')!.addEventListener('click', () => {
-  navigator.geolocation.getCurrentPosition((pos) => {
-    latInput.value = String(pos.coords.latitude);
-    lonInput.value = String(pos.coords.longitude);
-  });
+btnGeo.addEventListener('click', () => {
+  if (stopGeoWatch) return; // ya está en vivo, no arrancar un segundo watch
+  btnGeo.textContent = 'Ubicación en vivo…';
+  stopGeoWatch = watchFilteredPosition(
+    (pos) => {
+      latInput.value = String(pos.coords.latitude);
+      lonInput.value = String(pos.coords.longitude);
+    },
+    (err) => {
+      if (err.code === err.PERMISSION_DENIED) {
+        showToast('No se pudo activar la ubicación en vivo: permiso denegado.', 'error');
+        stopLiveLocation();
+      }
+    },
+  );
 });
+
+// una edición manual de lat/lon corta el watch para no pisar la
+// corrección del usuario con la próxima lectura del GPS. Asignar
+// `.value` por script (como hace el watch arriba) no dispara 'input',
+// así que este listener solo reacciona a ediciones reales del usuario.
+latInput.addEventListener('input', stopLiveLocation);
+lonInput.addEventListener('input', stopLiveLocation);
 
 // pegar "lat,lon" en el campo de latitud separa ambos valores en sus
 // respectivos campos, en vez de dejar el texto crudo en un input numérico.
@@ -147,6 +177,7 @@ document.getElementById('report-form')!.addEventListener('submit', async (e) => 
     showToast('Reporte enviado. Pendiente de aprobación.', 'success');
     (document.getElementById('report-form') as HTMLFormElement).reset();
     syncFieldVisibility();
+    stopLiveLocation();
     updateMessageCount();
   } catch (err: any) {
     showToast(err.message || 'No se pudo enviar el reporte.', 'error');
