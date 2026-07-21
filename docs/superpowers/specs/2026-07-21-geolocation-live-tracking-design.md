@@ -39,11 +39,18 @@ sentido (se oculta tras usarse) a un toggle.
   No se usa promedio móvil/EMA: agregaría lag real cuando el usuario sí
   se mueve y no resuelve el caso de lecturas de baja precisión (las
   seguiría promediando).
-- **Validación al click en `testCells.ts`:** se usa la última posición
-  aceptada del watch en curso (`getLastKnownPosition()`), no se fuerza
-  una lectura puntual adicional por click. El watch ya empuja lecturas
-  frescas y filtradas constantemente, así que sirve como prueba de
-  presencia sin el costo de una nueva consulta GPS por cada click.
+- **Validación al click en `testCells.ts` y `realCells.ts`:** se usa la
+  última posición aceptada del watch en curso (`getLastKnownPosition()`),
+  no se fuerza una lectura puntual adicional por click. El watch ya
+  empuja lecturas frescas y filtradas constantemente, así que sirve como
+  prueba de presencia sin el costo de una nueva consulta GPS por cada
+  click. Esto aplica en dos lugares con el mismo patrón: el click sobre
+  el mapa vacío para crear una celda de prueba (`testCells.ts`) y el
+  click sobre una celda real ya reportada para encadenar otro reporte
+  desde otra ubicación física dentro del mismo hexágono
+  (`realCells.ts`, dentro de `loadCells`) — ambos hoy llaman
+  `getCurrentGeoPosition()` puntualmente y pasan a leer
+  `getLastKnownPosition()`.
 - **Toggle de "modo prueba" (no-admin):**
   - El botón permanece **siempre visible** (no se oculta tras el primer
     uso) y cambia de texto según el estado: "Activar modo prueba" ↔
@@ -111,7 +118,7 @@ Leaflet, usable tanto por el mapa como por `/reportar`):
   corriendo indefinidamente — se expone por higiene/testeo, no por uso
   actual).
 - Se re-exporta `getLastKnownPosition` de `geoWatch.ts` para que
-  `testCells.ts` lo use en el click handler.
+  `testCells.ts` y `realCells.ts` lo usen en sus click handlers.
 - `getCurrentGeoPosition` (el `getCurrentPosition` puntual actual) se
   mantiene sin cambios — sigue siendo el mecanismo del primer fix antes
   de arrancar el watch.
@@ -141,6 +148,15 @@ consultada además desde el listener único de click.
   efectivamente prende/apaga `isTestModeEnabled()` para no-admin — solo
   la primera vez que se activa, dispara además el fix inicial + arranca
   el watch. Admin nunca llama a `toggleTestMode()` (no tiene botón).
+
+**`apps/web/src/lib/map/realCells.ts`:** el click handler sobre una
+celda real ya reportada (dentro de `loadCells`, la rama que encadena un
+reporte adicional cuando el modo prueba está activo) tiene el mismo
+patrón que `testCells.ts`: deja de hacer `await getCurrentGeoPosition()`
+y en su lugar lee `getLastKnownPosition()` (síncrono); si no hay ninguna
+posición aceptada todavía, mantiene el comportamiento silencioso actual
+(`return` sin toast — es solo navegación del mapa, no un intento
+explícito de reportar).
 
 **`apps/web/src/pages/index.astro`:** sin cambios — el botón
 `btn-enable-test` ya arranca `hidden` en el markup y ya es
