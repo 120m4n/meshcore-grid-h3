@@ -7,7 +7,7 @@ import { formatDateTimeBogota } from '../datetime.ts';
 import { H3_RESOLUTION } from '../mapBounds.ts';
 import { map, cellLayer, originsLayer } from './setup.ts';
 import { realIndexes, cellPolygons, isTestModeEnabled } from './state.ts';
-import { getCurrentGeoPosition, renderUserLocation } from './geolocation.ts';
+import { getLastKnownPosition } from './geolocation.ts';
 import { copyReportMessage } from './reportMessage.ts';
 
 const CELLS_LAST_FETCH_KEY = 'meshcore:cells-last-fetch';
@@ -48,7 +48,7 @@ export async function loadCells(isAdmin: boolean) {
       `);
       // evitar que el clic sobre una celda real también dispare el
       // creador/eliminador de celdas de prueba del mapa
-      polygon.on('click', async (e) => {
+      polygon.on('click', (e) => {
         L.DomEvent.stopPropagation(e);
         showCellOrigins(cell.h3_index); // ver info siempre, sin importar dónde esté parado
 
@@ -62,13 +62,8 @@ export async function loadCells(isAdmin: boolean) {
           copyReportMessage(e.latlng.lat, e.latlng.lng);
           return;
         }
-        let pos: GeolocationPosition;
-        try {
-          pos = await getCurrentGeoPosition();
-        } catch {
-          return; // solo navegando el mapa, sin GPS no hay nada más que hacer
-        }
-        renderUserLocation(pos);
+        const pos = getLastKnownPosition();
+        if (!pos) return; // solo navegando el mapa, sin GPS no hay nada más que hacer
         const userH3 = latLngToCell(pos.coords.latitude, pos.coords.longitude, H3_RESOLUTION);
         if (userH3 !== cell.h3_index) return; // viendo la celda, pero no parado ahí
         copyReportMessage(pos.coords.latitude, pos.coords.longitude);

@@ -3,10 +3,15 @@ import { cellToBoundary, latLngToCell } from 'h3-js';
 import { showToast } from '../toast.ts';
 import { colorForScore } from '../colors.ts';
 import { formatDateTimeBogota } from '../datetime.ts';
-import { H3_RESOLUTION } from '../mapBounds.ts';
+import { H3_RESOLUTION, MAX_ZOOM } from '../mapBounds.ts';
 import { map, testLayer } from './setup.ts';
-import { realIndexes, setTestModeEnabled } from './state.ts';
-import { getCurrentGeoPosition, renderUserLocation } from './geolocation.ts';
+import { realIndexes, isTestModeEnabled, setTestModeEnabled } from './state.ts';
+import {
+  getCurrentGeoPosition,
+  getLastKnownPosition,
+  renderUserLocation,
+  startLiveUserLocation,
+} from './geolocation.ts';
 import { copyReportMessage } from './reportMessage.ts';
 
 // ============ celdas de prueba (mock, solo localStorage) ============
@@ -85,57 +90,100 @@ function clearTestCells() {
   renderAllTestCells();
 }
 
-// Celdas de prueba: admin las tiene siempre y puede clickear cualquier
-// celda (es una herramienta de testing, no una medición real). Un
-// usuario normal las desbloquea aceptando geolocalización, pero cada
-// click revalida el GPS en el momento — no alcanza con haber estado
+let isAdminMode = false;
+let hasStartedLiveWatch = false;
+
+// Click sobre el mapa vacío: crea/quita una celda de prueba. Gatea todo
+// con isTestModeEnabled() — el toggle de "Activar/Desactivar modo
+// prueba" solo mueve este flag, nunca detiene el GPS ni redibuja nada.
+//
+// Un usuario normal: la última posición del watch en curso sirve de
+// prueba de presencia, sin pedir una lectura GPS puntual por click —
+// cada click revalida el GPS en el momento pero sin el costo de una
+// nueva consulta al navegador, porque el watch ya empuja lecturas
+// frescas y filtradas constantemente. No alcanza con haber estado
 // parado ahí una vez al activar el modo, porque medir señal exige estar
 // físicamente en el lugar: si dejáramos elegir cualquier celda del mapa,
 // cualquiera podría "reportar" cobertura en zonas donde nunca estuvo. El
-// plus code copiado siempre sale de esa posición GPS fresca, nunca del
-// punto exacto donde cayó el click.
-export function enableTestMode(isAdmin: boolean) {
-  setTestModeEnabled(true);
-  map.on('click', async (e: L.LeafletMouseEvent) => {
-    const h3Index = latLngToCell(e.latlng.lat, e.latlng.lng, H3_RESOLUTION);
-    if (realIndexes.has(h3Index)) return; // no pisar datos reales aprobados
+// plus code copiado siempre sale de esa posición GPS, nunca del punto
+// exacto donde cayó el click.
+async function handleMapClick(e: L.LeafletMouseEvent) {
+  if (!isTestModeEnabled()) return;
+  const h3Index = latLngToCell(e.latlng.lat, e.latlng.lng, H3_RESOLUTION);
+  if (realIndexes.has(h3Index)) return; // no pisar datos reales aprobados
 
-    const isTestCell = loadTestCells().some((c) => c.h3_index === h3Index);
-    if (isTestCell) {
-      removeTestCell(h3Index);
-      return;
-    }
+  const isTestCell = loadTestCells().some((c) => c.h3_index === h3Index);
+  if (isTestCell) {
+    removeTestCell(h3Index);
+    return;
+  }
 
-    if (isAdmin) {
-      addTestCell(h3Index);
-      copyReportMessage(e.latlng.lat, e.latlng.lng);
-      return;
-    }
-
-    let pos: GeolocationPosition;
-    try {
-      pos = await getCurrentGeoPosition();
-    } catch {
-      showToast('No se pudo obtener tu ubicación GPS', 'error');
-      return;
-    }
-    renderUserLocation(pos);
-    const userH3 = latLngToCell(pos.coords.latitude, pos.coords.longitude, H3_RESOLUTION);
-    if (userH3 !== h3Index) {
-      showToast('Solo podés reportar la celda donde estás parado ahora mismo', 'error');
-      return;
-    }
+  if (isAdminMode) {
     addTestCell(h3Index);
-    copyReportMessage(pos.coords.latitude, pos.coords.longitude);
-  });
-  // solo admin puede acumular varias celdas de prueba en cualquier parte
-  // del mapa (sin el candado de GPS) — un usuario normal tiene como
-  // máximo una, la de su ubicación actual, y ya puede quitarla clickeando
-  // de nuevo esa misma celda (ver isTestCell arriba). Mostrarles este
-  // botón es redundante y sugiere un estado acumulado que nunca existe.
+    copyReportMessage(e.latlng.lat, e.latlng.lng);
+    return;
+  }
+
+  const pos = getLastKnownPosition();
+  if (!pos) {
+    showToast('No se pudo obtener tu ubicación GPS', 'error');
+    return;
+  }
+  const userH3 = latLngToCell(pos.coords.latitude, pos.coords.longitude, H3_RESOLUTION);
+  if (userH3 !== h3Index) {
+    showToast('Solo podés reportar la celda donde estás parado ahora mismo', 'error');
+    return;
+  }
+  addTestCell(h3Index);
+  copyReportMessage(pos.coords.latitude, pos.coords.longitude);
+}
+
+// Registro único: se llama una sola vez al cargar la página, para
+// cualquier usuario. Admin queda con el modo prueba activo de una (sin
+// GPS, como hoy); no-admin arranca desactivado hasta que use el botón
+// (ver toggleTestMode).
+export function initTestMode(isAdmin: boolean) {
+  isAdminMode = isAdmin;
+  map.on('click', handleMapClick);
+
   if (isAdmin) {
+    setTestModeEnabled(true);
     document.getElementById('btn-clear-test')!.hidden = false;
     document.getElementById('btn-clear-test')!.addEventListener('click', clearTestCells);
+  } else {
+    setTestModeEnabled(false);
   }
   renderAllTestCells();
+}
+
+// Toggle del botón "Activar/Desactivar modo prueba" (no-admin). Solo la
+// primera vez que se activa pide el fix GPS inicial y arranca el watch
+// en vivo — queda corriendo indefinidamente; los toggles siguientes
+// solo prenden/apagan la interacción de click.
+export async function toggleTestMode(): Promise<void> {
+  if (isTestModeEnabled()) {
+    setTestModeEnabled(false);
+    showToast('Modo prueba desactivado');
+    return;
+  }
+
+  if (!hasStartedLiveWatch) {
+    let firstPos: GeolocationPosition;
+    try {
+      firstPos = await getCurrentGeoPosition();
+    } catch {
+      showToast('No se pudo activar el modo prueba sin acceso a tu ubicación', 'error');
+      return;
+    }
+    hasStartedLiveWatch = true;
+    renderUserLocation(firstPos);
+    map.setView([firstPos.coords.latitude, firstPos.coords.longitude], Math.min(16, MAX_ZOOM));
+    startLiveUserLocation((err) => {
+      if (err.code === err.PERMISSION_DENIED) {
+        showToast('Se perdió el acceso a tu ubicación GPS', 'error');
+      }
+    });
+  }
+  setTestModeEnabled(true);
+  showToast('Modo prueba activado');
 }

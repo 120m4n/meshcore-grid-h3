@@ -1,8 +1,6 @@
-import { map } from './map/setup.ts';
 import { loadCells } from './map/realCells.ts';
-import { enableTestMode } from './map/testCells.ts';
-import { getCurrentGeoPosition, renderUserLocation } from './map/geolocation.ts';
-import { MAX_ZOOM } from './mapBounds.ts';
+import { initTestMode, toggleTestMode } from './map/testCells.ts';
+import { isTestModeEnabled } from './map/state.ts';
 import { showToast } from './toast.ts';
 
 const token = localStorage.getItem('token');
@@ -10,28 +8,20 @@ const token = localStorage.getItem('token');
 // aceptando geolocalización (ver btn-enable-test más abajo).
 const isAdmin = localStorage.getItem('role') === 'admin';
 
-if (isAdmin) {
-  enableTestMode(isAdmin);
-} else {
-  const btnEnableTest = document.getElementById('btn-enable-test')!;
+initTestMode(isAdmin);
+
+if (!isAdmin) {
+  const btnEnableTest = document.getElementById('btn-enable-test') as HTMLButtonElement;
   btnEnableTest.hidden = false;
   btnEnableTest.addEventListener('click', async () => {
     if (!navigator.geolocation) {
       showToast('Tu navegador no soporta geolocalización', 'error');
       return;
     }
-    let pos: GeolocationPosition;
-    try {
-      pos = await getCurrentGeoPosition();
-    } catch {
-      showToast('No se pudo activar el modo prueba sin acceso a tu ubicación', 'error');
-      return;
-    }
-    btnEnableTest.hidden = true;
-    renderUserLocation(pos);
-    map.setView([pos.coords.latitude, pos.coords.longitude], Math.min(16, MAX_ZOOM));
-    enableTestMode(isAdmin);
-    showToast('Modo prueba activado');
+    await toggleTestMode();
+    btnEnableTest.textContent = isTestModeEnabled()
+      ? 'Desactivar modo prueba'
+      : 'Activar modo prueba';
   });
 }
 

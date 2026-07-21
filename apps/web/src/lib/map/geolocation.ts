@@ -1,5 +1,8 @@
 import L from 'leaflet';
 import { userLocationLayer } from './setup.ts';
+import { watchFilteredPosition, getLastKnownPosition } from '../geoWatch.ts';
+
+export { getLastKnownPosition };
 
 export function getCurrentGeoPosition(): Promise<GeolocationPosition> {
   return new Promise((resolve, reject) => {
@@ -38,4 +41,14 @@ export function renderUserLocation(pos: GeolocationPosition) {
     fillOpacity: 1,
     interactive: false,
   }).addTo(userLocationLayer);
+}
+
+// Arranca el watch de geolocalización en vivo: cada lectura aceptada
+// (filtrada por geoWatch.ts) redibuja el punto. Se deja corriendo
+// indefinidamente mientras dure la página — el toggle de modo prueba
+// no lo detiene, ver spec 2026-07-21-geolocation-live-tracking-design.md.
+export function startLiveUserLocation(
+  onError?: (err: GeolocationPositionError) => void,
+): () => void {
+  return watchFilteredPosition(renderUserLocation, onError);
 }
