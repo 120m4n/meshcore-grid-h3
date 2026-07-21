@@ -226,6 +226,33 @@ QGIS vía "Añadir capa de texto delimitado"). El mapa Leaflet en el
 frontend recalcula el boundary del hexágono client-side con `h3-js`
 (`h3.cellToBoundary`), no consume `geom_wkt`.
 
+### Geolocalización en vivo, no lecturas puntuales
+
+`apps/web/src/lib/geoWatch.ts` envuelve `navigator.geolocation.watchPosition`
+con un filtro anti-drift (descarta lecturas con `accuracy` peor que
+`MAX_ACCURACY_M` o que caen dentro del círculo de incertidumbre de la
+última posición aceptada) y expone `getLastKnownPosition()`. Tanto el
+mapa (`map/geolocation.ts`, modo prueba) como `/reportar` (botón "Usar mi
+ubicación") lo consumen — ninguno de los dos vuelve a usar
+`getCurrentPosition` puntual para validar dónde está parado el usuario;
+en el mapa, los clicks de `testCells.ts`/`realCells.ts` leen la última
+posición del watch en vez de pedir un fix GPS nuevo por click. En el
+mapa el watch queda corriendo indefinidamente una vez arrancado (nunca
+lo detiene el toggle); en `/reportar` sí se detiene al cambiar de
+método, al enviar el reporte, o si el usuario edita lat/lon a mano.
+
+### "Activar modo prueba" es un toggle que no toca el GPS
+
+El botón (no-admin) alterna únicamente si el click sobre el mapa
+crea/copia una celda de prueba (`isTestModeEnabled()` en
+`map/state.ts`) — no prende ni apaga el watch de geolocalización ni el
+punto dibujado, que quedan activos de forma permanente desde la primera
+activación. `map/testCells.ts` separa el registro del listener
+`map.on('click', ...)` (una sola vez, `initTestMode`) del toggle en sí
+(`toggleTestMode`) para evitar registrar el listener más de una vez.
+Admin no usa este botón: su modo prueba sigue siempre activo, sin GPS,
+igual que antes de esta feature.
+
 ### Migraciones
 
 `internal/db/migrations/*.sql` se embeben con `//go:embed` y se aplican
