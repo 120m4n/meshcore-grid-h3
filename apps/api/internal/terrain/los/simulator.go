@@ -29,6 +29,8 @@ type SimulationInput struct {
 	SampleStepM    float64
 	EarthCurvature bool
 	RefractionK    float64
+	StartAngleDeg  float64
+	EndAngleDeg    float64
 }
 
 type Metadata struct {

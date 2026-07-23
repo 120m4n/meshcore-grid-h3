@@ -144,6 +144,8 @@ type RadialSimulationRequest struct {
 	SampleStepM    *float64 `json:"sample_step_m"`
 	EarthCurvature *bool    `json:"earth_curvature"`
 	RefractionK    *float64 `json:"refraction_k"`
+	StartAngleDeg  *float64 `json:"start_angle_deg"`
+	EndAngleDeg    *float64 `json:"end_angle_deg"`
 }
 
 type RadialSimulationRay struct {
