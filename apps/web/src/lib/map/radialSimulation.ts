@@ -26,12 +26,25 @@ export function enableOriginPicking(callback: (lat: number, lon: number) => void
   onOriginPicked = callback;
 }
 
+// Expuesto para que los handlers de click de las capas de celdas
+// (realCells.ts, testCells.ts) puedan ceder el paso a la selección de
+// origen antes de correr su propia lógica (popup de info, alta/baja de
+// celda de prueba) — sin esto, un polygon.on('click', ...) que hace
+// L.DomEvent.stopPropagation(e) nunca deja llegar el click hasta acá.
+export function isPickingOrigin(): boolean {
+  return pickingOrigin;
+}
+
+export function pickOriginAt(lat: number, lon: number) {
+  pickingOrigin = false;
+  setOriginMarker(lat, lon);
+  onOriginPicked?.(lat, lon);
+  onOriginPicked = null;
+}
+
 map.on('click', (e: L.LeafletMouseEvent) => {
   if (!pickingOrigin) return;
-  pickingOrigin = false;
-  setOriginMarker(e.latlng.lat, e.latlng.lng);
-  onOriginPicked?.(e.latlng.lat, e.latlng.lng);
-  onOriginPicked = null;
+  pickOriginAt(e.latlng.lat, e.latlng.lng);
 });
 
 function setOriginMarker(lat: number, lon: number) {

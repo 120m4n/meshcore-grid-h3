@@ -13,6 +13,7 @@ import {
   startLiveUserLocation,
 } from './geolocation.ts';
 import { copyReportMessage } from './reportMessage.ts';
+import { isPickingOrigin, pickOriginAt } from './radialSimulation.ts';
 
 // ============ celdas de prueba (mock, solo localStorage) ============
 // No toca el backend ni cell_agg real. Sirve para probar la interacción
@@ -61,6 +62,11 @@ function renderTestCell(cell: TestCell) {
   `);
   polygon.on('click', (e) => {
     L.DomEvent.stopPropagation(e);
+    if (isPickingOrigin()) {
+      polygon.closePopup();
+      pickOriginAt(e.latlng.lat, e.latlng.lng);
+      return;
+    }
     removeTestCell(cell.h3_index);
   });
 }
