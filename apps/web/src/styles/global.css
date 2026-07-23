@@ -232,6 +232,54 @@ textarea:focus-visible {
   flex-shrink: 0;
 }
 
+/* HUD flotante de la simulación LOS radial — mismo lenguaje visual que
+   .legend (fondo/borde/blur), del lado derecho para no competir con la
+   leyenda de cobertura (izquierda) ni el control de capas de Leaflet
+   (top-right, dentro del mapa, no del viewport). */
+.radar-panel {
+  position: absolute;
+  z-index: 500;
+  right: 0.9rem;
+  top: 7rem;
+  width: 220px;
+  background: rgba(16, 29, 46, 0.92);
+  border: 1px solid var(--border-bright);
+  border-radius: 6px;
+  padding: 0.7rem 0.8rem;
+  font-family: var(--font-display);
+  font-size: 0.7rem;
+  color: var(--text-dim);
+  backdrop-filter: blur(4px);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.radar-panel-title {
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text);
+}
+.radar-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+.radar-field input {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--border-bright);
+  border-radius: 4px;
+  color: var(--text);
+  padding: 0.3rem 0.4rem;
+  font-size: 0.75rem;
+}
+.radar-panel-actions {
+  display: flex;
+  gap: 0.4rem;
+}
+.radar-panel-actions .btn-sm {
+  flex: 1;
+}
+
 /* HUD de marca flotante sobre el mapa — siempre visible, no interactivo */
 .brand-overlay {
   position: absolute;

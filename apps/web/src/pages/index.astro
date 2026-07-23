@@ -39,6 +39,35 @@ import '../styles/global.css';
 
   <div id="map"></div>
 
+  <div class="radar-panel" id="radar-panel">
+    <div class="radar-panel-title">Simulación LOS 360°</div>
+    <button class="btn-sm btn-secondary" id="btn-pick-origin" type="button">Elegir origen en el mapa</button>
+    <div class="radar-field">
+      <label for="radar-origin">Origen</label>
+      <span id="radar-origin">— clic en el mapa —</span>
+    </div>
+    <div class="radar-field">
+      <label for="radar-height">Altura de antena (m)</label>
+      <input type="number" id="radar-height" value="15" min="0" max="9000" step="1" />
+    </div>
+    <div class="radar-field">
+      <label for="radar-angle-step">Paso angular (°)</label>
+      <input type="number" id="radar-angle-step" value="5" min="1" max="45" step="1" />
+    </div>
+    <div class="radar-field">
+      <label for="radar-max-distance">Distancia máx. (m)</label>
+      <input type="number" id="radar-max-distance" value="8000" min="100" max="100000" step="100" />
+    </div>
+    <div class="radar-field">
+      <label for="radar-sample-step">Paso de muestreo (m)</label>
+      <input type="number" id="radar-sample-step" value="100" min="5" max="250" step="5" />
+    </div>
+    <div class="radar-panel-actions">
+      <button class="btn-sm btn-secondary" id="btn-run-radial" type="button" disabled>Simular</button>
+      <button class="btn-sm btn-danger" id="btn-clear-radial" type="button">Limpiar</button>
+    </div>
+  </div>
+
   <div class="legend">
     <div class="legend-title">Cobertura de señal</div>
     <div class="legend-row"><span class="legend-swatch" style="background:#2ecc71"></span>Excelente</div>
