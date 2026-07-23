@@ -10,6 +10,7 @@ import (
 	"meshcore-map/api/internal/config"
 	"meshcore-map/api/internal/handlers"
 	"meshcore-map/api/internal/middleware"
+	"meshcore-map/api/internal/terrain/los"
 )
 
 func New(db *sql.DB, cfg config.Config) *gin.Engine {
@@ -41,6 +42,11 @@ func New(db *sql.DB, cfg config.Config) *gin.Engine {
 	cellH := &handlers.CellHandler{DB: db}
 	adminH := &handlers.AdminHandler{DB: db}
 	inviteH := &handlers.InviteHandler{DB: db}
+	simH := &handlers.SimulationHandler{
+		Elevation:      los.NewHTTPElevationProvider(cfg.DemAPIURL),
+		DemSourceLabel: cfg.DemSourceLabel,
+		DemResolutionM: cfg.DemResolutionM,
+	}
 
 	v1 := r.Group("/api/v1")
 	{
@@ -49,6 +55,7 @@ func New(db *sql.DB, cfg config.Config) *gin.Engine {
 		v1.POST("/auth/invite-codes/validate", authRateLimit, inviteH.Validate)
 		v1.GET("/cells", cellH.List)
 		v1.GET("/cells/:h3_index/origins", cellH.Origins)
+		v1.POST("/simulations/radial", middleware.RateLimit(middleware.PerHour(30), 5), simH.Radial)
 
 		authed := v1.Group("")
 		authed.Use(middleware.RequireAuth(cfg.JWTSecret))
