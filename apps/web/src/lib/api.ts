@@ -162,3 +162,43 @@ export interface CellOrigin {
 export function getCellOrigins(h3Index: string): Promise<CellOrigin[]> {
   return apiFetch(`/api/v1/cells/${h3Index}/origins`);
 }
+
+export interface RadialSimulationRequest {
+  origin_lat: number;
+  origin_lon: number;
+  origin_height_m: number;
+  angle_step_deg: number;
+  max_distance_m: number;
+  sample_step_m: number;
+  earth_curvature: boolean;
+  refraction_k?: number;
+}
+
+export interface RadialSimulationRay {
+  angle_deg: number;
+  end_lat: number;
+  end_lon: number;
+  distance_m: number;
+  collided: boolean;
+  collision_lat: number;
+  collision_lon: number;
+  collision_elev_m: number;
+}
+
+export interface RadialSimulationResponse {
+  rays: RadialSimulationRay[];
+  metadata: {
+    dem_source: string;
+    dem_resolution_m: number;
+    compute_ms: number;
+  };
+}
+
+// Endpoint público (sin JWT), igual que getCells — visualización de
+// solo lectura/cómputo, ver spec kit docs/superpowers/specs/2026-07-22-radial-los-spec-kit.md.
+export function simulateRadialLOS(input: RadialSimulationRequest): Promise<RadialSimulationResponse> {
+  return apiFetch('/api/v1/simulations/radial', {
+    method: 'POST',
+    body: JSON.stringify(input),
+  });
+}
