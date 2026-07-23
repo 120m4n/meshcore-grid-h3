@@ -134,3 +134,36 @@ type InviteCode struct {
 	UsedBy    *string `json:"used_by,omitempty"`
 	UsedAt    *string `json:"used_at,omitempty"`
 }
+
+type RadialSimulationRequest struct {
+	OriginLat      *float64 `json:"origin_lat"`
+	OriginLon      *float64 `json:"origin_lon"`
+	OriginHeightM  *float64 `json:"origin_height_m"`
+	AngleStepDeg   *float64 `json:"angle_step_deg"`
+	MaxDistanceM   *float64 `json:"max_distance_m"`
+	SampleStepM    *float64 `json:"sample_step_m"`
+	EarthCurvature *bool    `json:"earth_curvature"`
+	RefractionK    *float64 `json:"refraction_k"`
+}
+
+type RadialSimulationRay struct {
+	AngleDeg       float64 `json:"angle_deg"`
+	EndLat         float64 `json:"end_lat"`
+	EndLon         float64 `json:"end_lon"`
+	DistanceM      float64 `json:"distance_m"`
+	Collided       bool    `json:"collided"`
+	CollisionLat   float64 `json:"collision_lat"`
+	CollisionLon   float64 `json:"collision_lon"`
+	CollisionElevM float64 `json:"collision_elev_m"`
+}
+
+type RadialSimulationMetadata struct {
+	DemSource      string  `json:"dem_source"`
+	DemResolutionM float64 `json:"dem_resolution_m"`
+	ComputeMs      int64   `json:"compute_ms"`
+}
+
+type RadialSimulationResponse struct {
+	Rays     []RadialSimulationRay    `json:"rays"`
+	Metadata RadialSimulationMetadata `json:"metadata"`
+}
