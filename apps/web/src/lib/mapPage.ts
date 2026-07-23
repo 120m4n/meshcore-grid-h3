@@ -2,7 +2,13 @@ import { loadCells } from './map/realCells.ts';
 import { initTestMode, toggleTestMode } from './map/testCells.ts';
 import { isTestModeEnabled } from './map/state.ts';
 import { showToast } from './toast.ts';
-import { enableOriginPicking, runRadialSimulation, clearRadialSimulation } from './map/radialSimulation.ts';
+import {
+  enableOriginPicking,
+  runRadialSimulation,
+  cancelRadialSimulation,
+  clearRadialSimulation,
+  estimateTotalPoints,
+} from './map/radialSimulation.ts';
 
 const token = localStorage.getItem('token');
 // admin siempre tiene modo prueba; un usuario normal lo desbloquea
@@ -52,24 +58,82 @@ const radarOriginLabel = document.getElementById('radar-origin')!;
 const btnPickOrigin = document.getElementById('btn-pick-origin') as HTMLButtonElement;
 const btnRunRadial = document.getElementById('btn-run-radial') as HTMLButtonElement;
 const btnClearRadial = document.getElementById('btn-clear-radial') as HTMLButtonElement;
+const radarProgress = document.getElementById('radar-progress') as HTMLDivElement;
+const radarProgressFill = document.getElementById('radar-progress-fill') as HTMLDivElement;
+const radarProgressLabel = document.getElementById('radar-progress-label') as HTMLSpanElement;
+
+// Tasa asumida para estimar el % de avance mostrado en el cliente — el
+// endpoint es síncrono y no reporta avance real (ver spec kit, decisión
+// de diseño 2). Debe aproximar DEM_MAX_REQUESTS_PER_SEC del backend
+// (infra/docker-compose.yml); si ese valor cambia, ajustar acá también
+// para que la estimación no se aleje demasiado del tiempo real.
+const ASSUMED_REQUESTS_PER_SEC = 5;
+
+let simulationRunning = false;
+
+function setOriginLabel(lat: number, lon: number) {
+  radarOriginLabel.textContent = `${lat.toFixed(5)}, ${lon.toFixed(5)}`;
+}
+
+// Refleja simulationRunning en el botón: ▶ Simular (idle, btn-secondary,
+// habilitado solo si ya hay origen) ⇄ ⏹ Detener (corriendo, btn-danger —
+// reusa el token de color de alerta para marcar "esto ahora cancela",
+// siempre habilitado mientras corre para poder cancelar).
+function syncRunButton() {
+  if (simulationRunning) {
+    btnRunRadial.textContent = '⏹ Detener';
+    btnRunRadial.classList.remove('btn-secondary');
+    btnRunRadial.classList.add('btn-danger');
+    btnRunRadial.disabled = false;
+  } else {
+    btnRunRadial.textContent = '▶ Simular';
+    btnRunRadial.classList.remove('btn-danger');
+    btnRunRadial.classList.add('btn-secondary');
+    btnRunRadial.disabled = !pickedOrigin;
+  }
+  btnPickOrigin.disabled = simulationRunning;
+}
+syncRunButton(); // estado inicial — idempotente con el HTML estático de index.astro
 
 btnPickOrigin.addEventListener('click', () => {
   showToast('Hacé clic en el mapa para fijar el origen');
   enableOriginPicking((lat, lon) => {
     pickedOrigin = { lat, lon };
-    radarOriginLabel.textContent = `${lat.toFixed(5)}, ${lon.toFixed(5)}`;
-    btnRunRadial.disabled = false;
+    setOriginLabel(lat, lon);
+    syncRunButton();
   });
 });
 
-btnRunRadial.addEventListener('click', () => {
+btnRunRadial.addEventListener('click', async () => {
+  if (simulationRunning) {
+    cancelRadialSimulation();
+    return;
+  }
   if (!pickedOrigin) return;
+
   const heightM = Number((document.getElementById('radar-height') as HTMLInputElement).value);
   const angleStepDeg = Number((document.getElementById('radar-angle-step') as HTMLInputElement).value);
   const maxDistanceM = Number((document.getElementById('radar-max-distance') as HTMLInputElement).value);
   const sampleStepM = Number((document.getElementById('radar-sample-step') as HTMLInputElement).value);
 
-  runRadialSimulation({
+  const totalPoints = estimateTotalPoints(angleStepDeg, maxDistanceM, sampleStepM);
+  const estimatedMs = (totalPoints / ASSUMED_REQUESTS_PER_SEC) * 1000;
+
+  simulationRunning = true;
+  syncRunButton();
+  showToast(`Simulación iniciada — ${totalPoints} muestras`);
+
+  radarProgress.hidden = false;
+  radarProgressFill.style.width = '0%';
+  radarProgressLabel.textContent = 'Simulando… ~0% (estimado)';
+  const startedAt = Date.now();
+  const progressTimer = window.setInterval(() => {
+    const pct = Math.min(99, Math.round(((Date.now() - startedAt) / estimatedMs) * 100));
+    radarProgressFill.style.width = `${pct}%`;
+    radarProgressLabel.textContent = `Simulando… ~${pct}% (estimado)`;
+  }, 300);
+
+  const outcome = await runRadialSimulation({
     origin_lat: pickedOrigin.lat,
     origin_lon: pickedOrigin.lon,
     origin_height_m: heightM,
@@ -78,11 +142,28 @@ btnRunRadial.addEventListener('click', () => {
     sample_step_m: sampleStepM,
     earth_curvature: true,
   });
+
+  window.clearInterval(progressTimer);
+  if (outcome === 'ok') {
+    radarProgressFill.style.width = '100%';
+    radarProgressLabel.textContent = 'Listo';
+  } else {
+    radarProgressFill.style.width = '0%';
+    radarProgressLabel.textContent = outcome === 'aborted' ? 'Simulación detenida' : 'Simulación falló';
+    if (outcome === 'aborted') showToast('Simulación detenida');
+  }
+  setTimeout(() => {
+    radarProgress.hidden = true;
+  }, 600);
+
+  simulationRunning = false;
+  syncRunButton();
 });
 
 btnClearRadial.addEventListener('click', () => {
+  cancelRadialSimulation();
   clearRadialSimulation();
   pickedOrigin = null;
   radarOriginLabel.textContent = '— clic en el mapa —';
-  btnRunRadial.disabled = true;
+  syncRunButton();
 });

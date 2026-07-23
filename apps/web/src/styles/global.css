@@ -279,6 +279,26 @@ textarea:focus-visible {
 .radar-panel-actions .btn-sm {
   flex: 1;
 }
+.radar-progress {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+.radar-progress-track {
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+.radar-progress-fill {
+  height: 100%;
+  width: 0%;
+  background: var(--accent);
+  transition: width 0.25s linear;
+}
+#radar-progress-label {
+  color: var(--text-dim);
+}
 
 /* HUD de marca flotante sobre el mapa — siempre visible, no interactivo */
 .brand-overlay {
@@ -507,6 +527,20 @@ button[type="submit"]:disabled { opacity: 0.5; cursor: not-allowed; }
   cursor: pointer;
 }
 .btn-danger:hover { background: rgba(231, 76, 60, 0.12); }
+
+/* Sin esto, .btn-secondary/.btn-danger deshabilitados apenas se
+   distinguen de su estado normal (son borde/texto sin relleno, no un
+   botón sólido) — a diferencia de button[type="submit"]:disabled de
+   arriba, acá opacity sola no basta. pointer-events:none también anula
+   los :hover de arriba sin necesitar selectores :disabled:hover. */
+.btn-secondary:disabled,
+.btn-danger:disabled {
+  opacity: 0.45;
+  color: var(--text-dim);
+  border-color: var(--border-bright);
+  cursor: not-allowed;
+  pointer-events: none;
+}
 
 /* variante compacta de .btn-secondary/.btn-danger para celdas de tabla
    densas (3-4 acciones por fila) — mismo color/family, min-height más

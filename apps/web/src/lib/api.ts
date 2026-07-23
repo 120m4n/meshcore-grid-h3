@@ -196,9 +196,13 @@ export interface RadialSimulationResponse {
 
 // Endpoint público (sin JWT), igual que getCells — visualización de
 // solo lectura/cómputo, ver spec kit docs/superpowers/specs/2026-07-22-radial-los-spec-kit.md.
-export function simulateRadialLOS(input: RadialSimulationRequest): Promise<RadialSimulationResponse> {
+export function simulateRadialLOS(
+  input: RadialSimulationRequest,
+  signal?: AbortSignal
+): Promise<RadialSimulationResponse> {
   return apiFetch('/api/v1/simulations/radial', {
     method: 'POST',
     body: JSON.stringify(input),
+    signal,
   });
 }

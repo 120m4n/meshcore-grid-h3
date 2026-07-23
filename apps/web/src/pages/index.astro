@@ -63,8 +63,14 @@ import '../styles/global.css';
       <input type="number" id="radar-sample-step" value="100" min="5" max="250" step="5" />
     </div>
     <div class="radar-panel-actions">
-      <button class="btn-sm btn-secondary" id="btn-run-radial" type="button" disabled>Simular</button>
+      <button class="btn-sm btn-secondary" id="btn-run-radial" type="button" disabled>▶ Simular</button>
       <button class="btn-sm btn-danger" id="btn-clear-radial" type="button">Limpiar</button>
+    </div>
+    <div class="radar-progress" id="radar-progress" hidden>
+      <div class="radar-progress-track">
+        <div class="radar-progress-fill" id="radar-progress-fill"></div>
+      </div>
+      <span id="radar-progress-label"></span>
     </div>
   </div>
 
