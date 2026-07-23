@@ -15,6 +15,17 @@ type Config struct {
 	DemSourceLabel       string
 	DemResolutionM       float64
 	DemMaxRequestsPerSec float64
+
+	// Rate limits de la propia API (no del DEM) — ver
+	// middleware.RateLimit/PerHour, que ya reciben estos valores como
+	// parámetros. Antes hardcodeados en router.go; ahora configurables
+	// sin rebuild, mismo patrón que DemMaxRequestsPerSec.
+	GeneralRateLimitPerHour     int
+	GeneralRateLimitBurst       int
+	AuthRateLimitPerHour        int
+	AuthRateLimitBurst          int
+	SimulationsRateLimitPerHour int
+	SimulationsRateLimitBurst   int
 }
 
 func Load() Config {
@@ -36,6 +47,24 @@ func Load() Config {
 	if err != nil {
 		demMaxReqPerSec = 0
 	}
+
+	generalRateLimitPerHour := parseIntEnv("GENERAL_RATE_LIMIT_PER_HOUR", 300)
+	generalRateLimitBurst := parseIntEnv("GENERAL_RATE_LIMIT_BURST", 60)
+	authRateLimitPerHour := parseIntEnv("AUTH_RATE_LIMIT_PER_HOUR", 10)
+	authRateLimitBurst := parseIntEnv("AUTH_RATE_LIMIT_BURST", 5)
+	simulationsRateLimitPerHour := parseIntEnv("SIMULATIONS_RATE_LIMIT_PER_HOUR", 30)
+	// Default 3, no 5: el rate limit de /simulations/radial corre antes
+	// del handler, así que consume un token en cada intento (incluida
+	// una validación fallida o un 422 de cobertura DEM, no solo una
+	// corrida exitosa). Un burst de 5 permitía a un solo visitante
+	// disparar 5 simulaciones largas de golpe, compitiendo todas por el
+	// mismo presupuesto global de DemMaxRequestsPerSec (el
+	// HTTPElevationProvider es una única instancia compartida entre
+	// requests, ver router.go) y degradando el tiempo de espera de
+	// otros usuarios. 3 alcanza para una corrida + un reintento tras un
+	// error de validación, sin habilitar ese abuso.
+	simulationsRateLimitBurst := parseIntEnv("SIMULATIONS_RATE_LIMIT_BURST", 3)
+
 	return Config{
 		Port:                 getEnv("PORT", "8080"),
 		DBPath:               getEnv("DB_PATH", "/data/meshcore.db"),
@@ -46,7 +75,22 @@ func Load() Config {
 		DemSourceLabel:       getEnv("DEM_SOURCE_LABEL", "local-dem-api"),
 		DemResolutionM:       demResM,
 		DemMaxRequestsPerSec: demMaxReqPerSec,
+
+		GeneralRateLimitPerHour:     generalRateLimitPerHour,
+		GeneralRateLimitBurst:       generalRateLimitBurst,
+		AuthRateLimitPerHour:        authRateLimitPerHour,
+		AuthRateLimitBurst:          authRateLimitBurst,
+		SimulationsRateLimitPerHour: simulationsRateLimitPerHour,
+		SimulationsRateLimitBurst:   simulationsRateLimitBurst,
 	}
+}
+
+func parseIntEnv(key string, fallback int) int {
+	v, err := strconv.Atoi(getEnv(key, strconv.Itoa(fallback)))
+	if err != nil {
+		return fallback
+	}
+	return v
 }
 
 func getEnv(key, fallback string) string {

@@ -31,11 +31,11 @@ func New(db *sql.DB, cfg config.Config) *gin.Engine {
 	// Techo general por IP sobre toda la API pública — no es un límite
 	// pensado para molestar uso normal (el mapa ya tiene su propio TTL
 	// de 45min en el frontend), es un freno a scraping/DDoS básico.
-	r.Use(middleware.RateLimit(middleware.PerHour(300), 60))
+	r.Use(middleware.RateLimit(middleware.PerHour(cfg.GeneralRateLimitPerHour), cfg.GeneralRateLimitBurst))
 
 	// Límite más estricto específico para los endpoints de auth/registro
 	// — son los que más importa frenar contra abuso automatizado.
-	authRateLimit := middleware.RateLimit(middleware.PerHour(10), 5)
+	authRateLimit := middleware.RateLimit(middleware.PerHour(cfg.AuthRateLimitPerHour), cfg.AuthRateLimitBurst)
 
 	authH := &handlers.AuthHandler{DB: db, Cfg: cfg}
 	reportH := &handlers.ReportHandler{DB: db, Cfg: cfg}
@@ -55,7 +55,7 @@ func New(db *sql.DB, cfg config.Config) *gin.Engine {
 		v1.POST("/auth/invite-codes/validate", authRateLimit, inviteH.Validate)
 		v1.GET("/cells", cellH.List)
 		v1.GET("/cells/:h3_index/origins", cellH.Origins)
-		v1.POST("/simulations/radial", middleware.RateLimit(middleware.PerHour(30), 5), simH.Radial)
+		v1.POST("/simulations/radial", middleware.RateLimit(middleware.PerHour(cfg.SimulationsRateLimitPerHour), cfg.SimulationsRateLimitBurst), simH.Radial)
 
 		authed := v1.Group("")
 		authed.Use(middleware.RequireAuth(cfg.JWTSecret))
