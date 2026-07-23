@@ -15,6 +15,17 @@ services:
       JWT_SECRET: ${JWT_SECRET:-change-me-in-production}
       H3_RESOLUTION: ${H3_RESOLUTION:-8}
       WEB_ORIGIN: ${WEB_ORIGIN:-http://localhost:8081}
+      # TEMPORAL: apunta a la API DEM de pruebas en el host (Docker
+      # Desktop en Mac resuelve host.docker.internal al host sin config
+      # extra). Reemplazar por el endpoint DEM real antes de producción
+      # — ver docker-compose.prod.yml, que todavía no expone esta var.
+      DEM_API_URL: ${DEM_API_URL:-http://host.docker.internal:8000}
+      # TEMPORAL: la API DEM de pruebas tiene un rate limit propio muy
+      # estricto (una ráfaga de ~80 llamadas ya lo dispara). Este valor
+      # espacia las llamadas salientes del pool de concurrencia en vez de
+      # dispararlas todas de una — 0 = sin límite. Subir una vez que el
+      # rate limit real del lado del DEM esté configurado con más margen.
+      DEM_MAX_REQUESTS_PER_SEC: ${DEM_MAX_REQUESTS_PER_SEC:-12}
       TZ: America/Bogota
 
   web:

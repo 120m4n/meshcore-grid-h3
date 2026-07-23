@@ -43,7 +43,7 @@ func New(db *sql.DB, cfg config.Config) *gin.Engine {
 	adminH := &handlers.AdminHandler{DB: db}
 	inviteH := &handlers.InviteHandler{DB: db}
 	simH := &handlers.SimulationHandler{
-		Elevation:      los.NewHTTPElevationProvider(cfg.DemAPIURL),
+		Elevation:      los.NewHTTPElevationProvider(cfg.DemAPIURL, cfg.DemMaxRequestsPerSec),
 		DemSourceLabel: cfg.DemSourceLabel,
 		DemResolutionM: cfg.DemResolutionM,
 	}

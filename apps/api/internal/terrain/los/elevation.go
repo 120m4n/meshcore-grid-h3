@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"net/http"
 	"time"
+
+	"golang.org/x/time/rate"
 )
 
 // ElevationProvider resuelve la elevación (msnm) de un punto. Interfaz
@@ -35,9 +37,30 @@ func (e *DemUnavailableError) Unwrap() error { return e.Cause }
 type HTTPElevationProvider struct {
 	BaseURL string
 	Client  *http.Client
+	// limiter espacia las llamadas salientes al DEM a lo sumo a
+	// maxRequestsPerSec, independiente del tope de concurrencia
+	// (maxConcurrentElevationRequests, en simulator.go): sin esto, el
+	// pool de goroutines dispara hasta 24 llamadas simultáneas apenas
+	// arranca una simulación, lo que puede disparar un rate limit por
+	// ráfaga en el backend DEM aun cuando el presupuesto total de la
+	// simulación es razonable. nil = sin límite (maxRequestsPerSec <= 0).
+	limiter *rate.Limiter
 }
 
-func NewHTTPElevationProvider(baseURL string) *HTTPElevationProvider {
+// NewHTTPElevationProvider crea un cliente para la API DEM en baseURL.
+// maxRequestsPerSec <= 0 deja las llamadas sin espaciar (comportamiento
+// histórico); un valor > 0 limita la tasa saliente a ese máximo,
+// permitiendo absorber una ráfaga inicial del mismo tamaño (rate.Limiter
+// con burst == maxRequestsPerSec) y luego sostener ese ritmo.
+func NewHTTPElevationProvider(baseURL string, maxRequestsPerSec float64) *HTTPElevationProvider {
+	var limiter *rate.Limiter
+	if maxRequestsPerSec > 0 {
+		burst := int(maxRequestsPerSec)
+		if burst < 1 {
+			burst = 1 // rate.NewLimiter con burst 0 rechaza toda llamada, incluso a tasas < 1 req/s
+		}
+		limiter = rate.NewLimiter(rate.Limit(maxRequestsPerSec), burst)
+	}
 	return &HTTPElevationProvider{
 		BaseURL: baseURL,
 		Client: &http.Client{
@@ -46,6 +69,7 @@ func NewHTTPElevationProvider(baseURL string) *HTTPElevationProvider {
 				MaxIdleConnsPerHost: maxConcurrentElevationRequests,
 			},
 		},
+		limiter: limiter,
 	}
 }
 
@@ -63,6 +87,12 @@ type elevationErrorBody struct {
 }
 
 func (p *HTTPElevationProvider) ElevationAt(ctx context.Context, lat, lon float64) (float64, error) {
+	if p.limiter != nil {
+		if err := p.limiter.Wait(ctx); err != nil {
+			return 0, &DemUnavailableError{Cause: err}
+		}
+	}
+
 	payload, err := json.Marshal(elevationRequestBody{Lat: lat, Lon: lon})
 	if err != nil {
 		return 0, &DemUnavailableError{Cause: err}

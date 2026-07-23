@@ -22,7 +22,7 @@ func TestHTTPElevationProviderSuccess(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	p := NewHTTPElevationProvider(srv.URL)
+	p := NewHTTPElevationProvider(srv.URL, 0)
 	elev, err := p.ElevationAt(context.Background(), 4.6097, -74.0817)
 	if err != nil {
 		t.Fatalf("error inesperado: %v", err)
@@ -41,7 +41,7 @@ func TestHTTPElevationProviderCoverageError(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	p := NewHTTPElevationProvider(srv.URL)
+	p := NewHTTPElevationProvider(srv.URL, 0)
 	_, err := p.ElevationAt(context.Background(), 0, 0)
 	var coverageErr *DemCoverageError
 	if !errors.As(err, &coverageErr) {
@@ -55,7 +55,7 @@ func TestHTTPElevationProviderServerError(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	p := NewHTTPElevationProvider(srv.URL)
+	p := NewHTTPElevationProvider(srv.URL, 0)
 	_, err := p.ElevationAt(context.Background(), 4.6, -74.0)
 	var unavailableErr *DemUnavailableError
 	if !errors.As(err, &unavailableErr) {
@@ -64,7 +64,7 @@ func TestHTTPElevationProviderServerError(t *testing.T) {
 }
 
 func TestHTTPElevationProviderConnectionRefused(t *testing.T) {
-	p := NewHTTPElevationProvider("http://127.0.0.1:1") // puerto que nadie escucha
+	p := NewHTTPElevationProvider("http://127.0.0.1:1", 0) // puerto que nadie escucha
 	_, err := p.ElevationAt(context.Background(), 4.6, -74.0)
 	var unavailableErr *DemUnavailableError
 	if !errors.As(err, &unavailableErr) {
