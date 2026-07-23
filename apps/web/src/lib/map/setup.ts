@@ -43,3 +43,4 @@ export const cellLayer = L.layerGroup().addTo(map);
 export const testLayer = L.layerGroup().addTo(map);
 export const originsLayer = L.layerGroup().addTo(map);
 export const userLocationLayer = L.layerGroup().addTo(map);
+export const radialLayer = L.layerGroup().addTo(map);
