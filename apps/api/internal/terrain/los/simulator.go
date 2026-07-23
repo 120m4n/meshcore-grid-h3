@@ -55,7 +55,7 @@ type point struct{ lat, lon float64 }
 func (s *Simulator) Run(ctx context.Context, in SimulationInput) (*Response, error) {
 	start := time.Now()
 
-	rayCount := int(math.Ceil(360 / in.AngleStepDeg))
+	rayCount := int(math.Ceil((in.EndAngleDeg - in.StartAngleDeg) / in.AngleStepDeg))
 	samplesPerRay := int(math.Ceil(in.MaxDistanceM / in.SampleStepM))
 
 	distances := make([]float64, samplesPerRay)
@@ -72,7 +72,7 @@ func (s *Simulator) Run(ctx context.Context, in SimulationInput) (*Response, err
 	points := make([]point, 1+rayCount*samplesPerRay)
 	points[0] = point{in.OriginLat, in.OriginLon}
 	for i := 0; i < rayCount; i++ {
-		angle := float64(i) * in.AngleStepDeg
+		angle := in.StartAngleDeg + float64(i)*in.AngleStepDeg
 		angles[i] = angle
 		for j := 0; j < samplesPerRay; j++ {
 			lat, lon := Destination(in.OriginLat, in.OriginLon, angle, distances[j])

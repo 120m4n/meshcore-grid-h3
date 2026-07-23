@@ -38,6 +38,7 @@ func TestSimulatorRunFlatTerrainNeverCollides(t *testing.T) {
 		OriginLat: 7.1193, OriginLon: -73.1227, OriginHeightM: 30,
 		AngleStepDeg: 90, MaxDistanceM: 1000, SampleStepM: 500,
 		EarthCurvature: false, RefractionK: 0.13,
+		StartAngleDeg: 0, EndAngleDeg: 360,
 	}
 	resp, err := sim.Run(context.Background(), in)
 	if err != nil {
@@ -69,6 +70,7 @@ func TestSimulatorRunOriginOutOfCoverageFails(t *testing.T) {
 	in := SimulationInput{
 		OriginLat: 0, OriginLon: 0, AngleStepDeg: 90,
 		MaxDistanceM: 500, SampleStepM: 500, EarthCurvature: false, RefractionK: 0.13,
+		StartAngleDeg: 0, EndAngleDeg: 360,
 	}
 	_, err := sim.Run(context.Background(), in)
 	var coverageErr *DemCoverageError
@@ -95,6 +97,7 @@ func TestSimulatorRunPartialCoverageTruncatesOnlyAffectedRay(t *testing.T) {
 		OriginLat: 0, OriginLon: -73.21, OriginHeightM: 10,
 		AngleStepDeg: 180, MaxDistanceM: 20000, SampleStepM: 5000, // 2 rayos: 0° (norte) y 180° (sur)
 		EarthCurvature: false, RefractionK: 0.13,
+		StartAngleDeg: 0, EndAngleDeg: 360,
 	}
 	resp, err := sim.Run(context.Background(), in)
 	if err != nil {
@@ -125,6 +128,7 @@ func TestSimulatorRunAppliesOriginHeightAboveTerrain(t *testing.T) {
 		OriginLat: 7.0, OriginLon: -73.0, OriginHeightM: 5,
 		AngleStepDeg: 360, MaxDistanceM: 500, SampleStepM: 500,
 		EarthCurvature: false, RefractionK: 0.13,
+		StartAngleDeg: 0, EndAngleDeg: 360,
 	}
 	resp, err := sim.Run(context.Background(), in)
 	if err != nil {
@@ -139,5 +143,55 @@ func TestSimulatorRunAppliesOriginHeightAboveTerrain(t *testing.T) {
 	// originElevM quedaría en 500 == terreno y colisionaría por error.)
 	if resp.Rays[0].Collided {
 		t.Errorf("terreno a 500 < originElevM (500+5=505) no debería colisionar, pero Collided=true")
+	}
+}
+
+func TestSimulatorRunPartialArcGeneratesOnlyRequestedRays(t *testing.T) {
+	fake := &fakeElevationProvider{elevAt: func(lat, lon float64) (float64, error) { return 500, nil }}
+	sim := &Simulator{Elevation: fake}
+
+	in := SimulationInput{
+		OriginLat: 7.1193, OriginLon: -73.1227, OriginHeightM: 10,
+		AngleStepDeg: 30, MaxDistanceM: 1000, SampleStepM: 500,
+		EarthCurvature: false, RefractionK: 0.13,
+		StartAngleDeg: 0, EndAngleDeg: 90,
+	}
+	resp, err := sim.Run(context.Background(), in)
+	if err != nil {
+		t.Fatalf("error inesperado: %v", err)
+	}
+	if len(resp.Rays) != 3 { // (90-0)/30 = 3: ángulos 0, 30, 60
+		t.Fatalf("len(Rays) = %d, want 3", len(resp.Rays))
+	}
+	wantAngles := []float64{0, 30, 60}
+	for i, ray := range resp.Rays {
+		if ray.AngleDeg != wantAngles[i] {
+			t.Errorf("Rays[%d].AngleDeg = %v, want %v", i, ray.AngleDeg, wantAngles[i])
+		}
+	}
+}
+
+func TestSimulatorRunPartialArcWithNonZeroStart(t *testing.T) {
+	fake := &fakeElevationProvider{elevAt: func(lat, lon float64) (float64, error) { return 500, nil }}
+	sim := &Simulator{Elevation: fake}
+
+	in := SimulationInput{
+		OriginLat: 7.1193, OriginLon: -73.1227, OriginHeightM: 10,
+		AngleStepDeg: 45, MaxDistanceM: 1000, SampleStepM: 500,
+		EarthCurvature: false, RefractionK: 0.13,
+		StartAngleDeg: 90, EndAngleDeg: 180,
+	}
+	resp, err := sim.Run(context.Background(), in)
+	if err != nil {
+		t.Fatalf("error inesperado: %v", err)
+	}
+	if len(resp.Rays) != 2 { // (180-90)/45 = 2: ángulos 90, 135
+		t.Fatalf("len(Rays) = %d, want 2", len(resp.Rays))
+	}
+	wantAngles := []float64{90, 135}
+	for i, ray := range resp.Rays {
+		if ray.AngleDeg != wantAngles[i] {
+			t.Errorf("Rays[%d].AngleDeg = %v, want %v", i, ray.AngleDeg, wantAngles[i])
+		}
 	}
 }
