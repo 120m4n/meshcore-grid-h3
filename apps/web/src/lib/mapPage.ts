@@ -1,5 +1,6 @@
 import { loadCells } from './map/realCells.ts';
 import { initTestMode, toggleTestMode } from './map/testCells.ts';
+import { initCoordSearch } from './map/coordSearch.ts';
 import { isTestModeEnabled } from './map/state.ts';
 import { showToast } from './toast.ts';
 import {
@@ -16,6 +17,7 @@ const token = localStorage.getItem('token');
 const isAdmin = localStorage.getItem('role') === 'admin';
 
 initTestMode(isAdmin);
+initCoordSearch();
 
 if (!isAdmin) {
   const btnEnableTest = document.getElementById('btn-enable-test') as HTMLButtonElement;

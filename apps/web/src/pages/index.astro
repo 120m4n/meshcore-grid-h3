@@ -39,6 +39,14 @@ import '../styles/global.css';
 
   <div id="map"></div>
 
+  <div class="coord-panel" id="coord-panel">
+    <div class="coord-panel-title">Ir a coordenadas</div>
+    <div class="coord-panel-row">
+      <input type="text" id="coord-input" placeholder="lat,lon (ej: 7.12,-73.13)" />
+      <button class="btn-sm btn-secondary" id="btn-coord-go" type="button">Ir</button>
+    </div>
+  </div>
+
   <div class="radar-panel" id="radar-panel">
     <div class="radar-panel-title">Simulación LOS 360°</div>
     <button class="btn-sm btn-secondary" id="btn-pick-origin" type="button">Elegir origen en el mapa</button>
