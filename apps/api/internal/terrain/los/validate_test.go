@@ -83,3 +83,57 @@ func TestValidateRequestRefractionKOutOfRange(t *testing.T) {
 		t.Fatal("esperaba error con refraction_k fuera de [0, 0.5]")
 	}
 }
+
+func TestValidateRequestWavefrontDefaultsApplied(t *testing.T) {
+	in, err := ValidateRequest(validRequest())
+	if err != nil {
+		t.Fatalf("error inesperado: %v", err)
+	}
+	if in.StartAngleDeg != 0 {
+		t.Errorf("StartAngleDeg default = %v, want 0", in.StartAngleDeg)
+	}
+	if in.EndAngleDeg != 360 {
+		t.Errorf("EndAngleDeg default = %v, want 360", in.EndAngleDeg)
+	}
+}
+
+func TestValidateRequestWavefrontEndMustBeGreaterThanStart(t *testing.T) {
+	req := validRequest()
+	req.StartAngleDeg = f(180)
+	req.EndAngleDeg = f(180)
+	if _, err := ValidateRequest(req); err == nil {
+		t.Fatal("esperaba error con end_angle_deg == start_angle_deg")
+	}
+
+	req.EndAngleDeg = f(90)
+	if _, err := ValidateRequest(req); err == nil {
+		t.Fatal("esperaba error con end_angle_deg < start_angle_deg")
+	}
+}
+
+func TestValidateRequestWavefrontOutOfRange(t *testing.T) {
+	req := validRequest()
+	req.StartAngleDeg = f(-10)
+	if _, err := ValidateRequest(req); err == nil {
+		t.Fatal("esperaba error con start_angle_deg fuera de [0, 360]")
+	}
+
+	req = validRequest()
+	req.EndAngleDeg = f(400)
+	if _, err := ValidateRequest(req); err == nil {
+		t.Fatal("esperaba error con end_angle_deg fuera de [0, 360]")
+	}
+}
+
+func TestValidateRequestWavefrontPartialArcAppliesToBudget(t *testing.T) {
+	req := validRequest() // 72 rayos x 80 muestras = 5760 <= 8000 con 360° completos
+	req.StartAngleDeg = f(0)
+	req.EndAngleDeg = f(90) // ahora solo 18 rayos x 80 = 1440
+	in, err := ValidateRequest(req)
+	if err != nil {
+		t.Fatalf("error inesperado: %v", err)
+	}
+	if in.StartAngleDeg != 0 || in.EndAngleDeg != 90 {
+		t.Errorf("StartAngleDeg/EndAngleDeg = %v/%v, want 0/90", in.StartAngleDeg, in.EndAngleDeg)
+	}
+}

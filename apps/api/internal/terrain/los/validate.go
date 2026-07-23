@@ -62,7 +62,25 @@ func ValidateRequest(req models.RadialSimulationRequest) (SimulationInput, error
 		earthCurvature = *req.EarthCurvature
 	}
 
-	rayCount := int(math.Ceil(360 / angleStep))
+	startAngle := 0.0
+	if req.StartAngleDeg != nil {
+		startAngle = *req.StartAngleDeg
+	}
+	endAngle := 360.0
+	if req.EndAngleDeg != nil {
+		endAngle = *req.EndAngleDeg
+	}
+	if startAngle < 0 || startAngle > 360 {
+		return SimulationInput{}, fmt.Errorf("start_angle_deg debe estar en [0, 360]")
+	}
+	if endAngle < 0 || endAngle > 360 {
+		return SimulationInput{}, fmt.Errorf("end_angle_deg debe estar en [0, 360]")
+	}
+	if endAngle <= startAngle {
+		return SimulationInput{}, fmt.Errorf("end_angle_deg debe ser mayor que start_angle_deg")
+	}
+
+	rayCount := int(math.Ceil((endAngle - startAngle) / angleStep))
 	samplesPerRay := int(math.Ceil(maxDist / sampleStep))
 	total := rayCount * samplesPerRay
 	if total > MaxTotalSamples {
@@ -76,5 +94,6 @@ func ValidateRequest(req models.RadialSimulationRequest) (SimulationInput, error
 		OriginLat: lat, OriginLon: lon, OriginHeightM: heightM,
 		AngleStepDeg: angleStep, MaxDistanceM: maxDist, SampleStepM: sampleStep,
 		EarthCurvature: earthCurvature, RefractionK: refractionK,
+		StartAngleDeg: startAngle, EndAngleDeg: endAngle,
 	}, nil
 }
