@@ -20,12 +20,13 @@ services:
       # extra). Reemplazar por el endpoint DEM real antes de producción
       # — ver docker-compose.prod.yml, que todavía no expone esta var.
       DEM_API_URL: ${DEM_API_URL:-http://host.docker.internal:8000}
-      # TEMPORAL: la API DEM de pruebas tiene un rate limit propio muy
-      # estricto (una ráfaga de ~80 llamadas ya lo dispara). Este valor
-      # espacia las llamadas salientes del pool de concurrencia en vez de
-      # dispararlas todas de una — 0 = sin límite. Subir una vez que el
-      # rate limit real del lado del DEM esté configurado con más margen.
-      DEM_MAX_REQUESTS_PER_SEC: ${DEM_MAX_REQUESTS_PER_SEC:-12}
+      # TEMPORAL: 40 calibrado empíricamente contra la API DEM de pruebas
+      # (no es un límite de concurrencia — ráfagas aisladas de 100-150
+      # pasan igual — es una ventana de tiempo/tasa sostenida: 40 req/s
+      # sostuvo 1441 y 2881 llamadas seguidas sin 429, 80 req/s falló a
+      # los ~17s). Recalibrar si el rate limit real del lado del DEM
+      # cambia — 0 = sin límite.
+      DEM_MAX_REQUESTS_PER_SEC: ${DEM_MAX_REQUESTS_PER_SEC:-40}
       TZ: America/Bogota
 
   web:

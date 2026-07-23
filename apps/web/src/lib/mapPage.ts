@@ -67,7 +67,7 @@ const radarProgressLabel = document.getElementById('radar-progress-label') as HT
 // de diseño 2). Debe aproximar DEM_MAX_REQUESTS_PER_SEC del backend
 // (infra/docker-compose.yml); si ese valor cambia, ajustar acá también
 // para que la estimación no se aleje demasiado del tiempo real.
-const ASSUMED_REQUESTS_PER_SEC = 5;
+const ASSUMED_REQUESTS_PER_SEC = 40;
 
 let simulationRunning = false;
 
