@@ -10,6 +10,7 @@ import {
   clearRadialSimulation,
   estimateTotalPoints,
 } from './map/radialSimulation.ts';
+import { activateRuler, activateArc } from './map/measureTools.ts';
 
 const token = localStorage.getItem('token');
 // admin siempre tiene modo prueba; un usuario normal lo desbloquea
@@ -18,6 +19,12 @@ const isAdmin = localStorage.getItem('role') === 'admin';
 
 initTestMode(isAdmin);
 initCoordSearch();
+
+document.addEventListener('mc-tool-toggle', (e: Event) => {
+  const { tool } = (e as CustomEvent<{ tool: 'ruler' | 'arc' }>).detail;
+  if (tool === 'ruler') activateRuler();
+  else activateArc();
+});
 
 if (!isAdmin) {
   const btnEnableTest = document.getElementById('btn-enable-test') as HTMLButtonElement;
