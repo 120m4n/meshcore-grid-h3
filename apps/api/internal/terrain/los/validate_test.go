@@ -125,6 +125,58 @@ func TestValidateRequestWavefrontOutOfRange(t *testing.T) {
 	}
 }
 
+func TestValidateRequestFresnelDefaultsApplied(t *testing.T) {
+	in, err := ValidateRequest(validRequest())
+	if err != nil {
+		t.Fatalf("error inesperado: %v", err)
+	}
+	if !in.FresnelCompensation {
+		t.Errorf("FresnelCompensation default = %v, want true", in.FresnelCompensation)
+	}
+	if in.CompensationFactor != defaultCompensationFactor {
+		t.Errorf("CompensationFactor default = %v, want %v", in.CompensationFactor, defaultCompensationFactor)
+	}
+}
+
+func TestValidateRequestFresnelCompensationCanBeDisabled(t *testing.T) {
+	req := validRequest()
+	req.FresnelCompensation = b(false)
+	in, err := ValidateRequest(req)
+	if err != nil {
+		t.Fatalf("error inesperado: %v", err)
+	}
+	if in.FresnelCompensation {
+		t.Errorf("FresnelCompensation = %v, want false", in.FresnelCompensation)
+	}
+}
+
+func TestValidateRequestCompensationFactorOutOfRange(t *testing.T) {
+	req := validRequest()
+	req.CompensationFactor = f(0.4)
+	if _, err := ValidateRequest(req); err == nil {
+		t.Fatal("esperaba error con compensation_factor fuera de [0.5, 0.7]")
+	}
+
+	req = validRequest()
+	req.CompensationFactor = f(0.8)
+	if _, err := ValidateRequest(req); err == nil {
+		t.Fatal("esperaba error con compensation_factor fuera de [0.5, 0.7]")
+	}
+}
+
+func TestValidateRequestCompensationFactorWithinRangePasses(t *testing.T) {
+	req := validRequest()
+	req.CompensationFactor = f(0.5)
+	if _, err := ValidateRequest(req); err != nil {
+		t.Fatalf("compensation_factor=0.5 no debería fallar: %v", err)
+	}
+
+	req.CompensationFactor = f(0.7)
+	if _, err := ValidateRequest(req); err != nil {
+		t.Fatalf("compensation_factor=0.7 no debería fallar: %v", err)
+	}
+}
+
 func TestValidateRequestWavefrontPartialArcAppliesToBudget(t *testing.T) {
 	req := validRequest() // 72 rayos x 80 muestras = 5760 <= 8000 con 360° completos
 	req.StartAngleDeg = f(0)

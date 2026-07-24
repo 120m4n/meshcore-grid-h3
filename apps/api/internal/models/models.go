@@ -136,33 +136,47 @@ type InviteCode struct {
 }
 
 type RadialSimulationRequest struct {
-	OriginLat      *float64 `json:"origin_lat"`
-	OriginLon      *float64 `json:"origin_lon"`
-	OriginHeightM  *float64 `json:"origin_height_m"`
-	AngleStepDeg   *float64 `json:"angle_step_deg"`
-	MaxDistanceM   *float64 `json:"max_distance_m"`
-	SampleStepM    *float64 `json:"sample_step_m"`
-	EarthCurvature *bool    `json:"earth_curvature"`
-	RefractionK    *float64 `json:"refraction_k"`
-	StartAngleDeg  *float64 `json:"start_angle_deg"`
-	EndAngleDeg    *float64 `json:"end_angle_deg"`
+	OriginLat           *float64 `json:"origin_lat"`
+	OriginLon           *float64 `json:"origin_lon"`
+	OriginHeightM       *float64 `json:"origin_height_m"`
+	AngleStepDeg        *float64 `json:"angle_step_deg"`
+	MaxDistanceM        *float64 `json:"max_distance_m"`
+	SampleStepM         *float64 `json:"sample_step_m"`
+	EarthCurvature      *bool    `json:"earth_curvature"`
+	RefractionK         *float64 `json:"refraction_k"`
+	StartAngleDeg       *float64 `json:"start_angle_deg"`
+	EndAngleDeg         *float64 `json:"end_angle_deg"`
+	FresnelCompensation *bool    `json:"fresnel_compensation"`
+	CompensationFactor  *float64 `json:"compensation_factor"`
 }
 
 type RadialSimulationRay struct {
-	AngleDeg       float64 `json:"angle_deg"`
-	EndLat         float64 `json:"end_lat"`
-	EndLon         float64 `json:"end_lon"`
-	DistanceM      float64 `json:"distance_m"`
+	AngleDeg        float64 `json:"angle_deg"`
+	EndLat          float64 `json:"end_lat"`
+	EndLon          float64 `json:"end_lon"`
+	DistanceM       float64 `json:"distance_m"`
+	LinkStatus      string  `json:"link_status"`
+	FresnelClearPct float64 `json:"fresnel_clear_pct"`
+	// Collided se deriva de LinkStatus (!= "clear") en el handler, no en
+	// el motor de simulación — se mantiene por compatibilidad con el
+	// frontend actual, que todavía no distingue degraded de blocked.
 	Collided       bool    `json:"collided"`
 	CollisionLat   float64 `json:"collision_lat"`
 	CollisionLon   float64 `json:"collision_lon"`
 	CollisionElevM float64 `json:"collision_elev_m"`
 }
 
+type FresnelTablePoint struct {
+	DistanceM      float64 `json:"distance_m"`
+	FresnelRadiusM float64 `json:"fresnel_radius_m"`
+	HeightExtraM   float64 `json:"height_extra_m"`
+}
+
 type RadialSimulationMetadata struct {
-	DemSource      string  `json:"dem_source"`
-	DemResolutionM float64 `json:"dem_resolution_m"`
-	ComputeMs      int64   `json:"compute_ms"`
+	DemSource      string              `json:"dem_source"`
+	DemResolutionM float64             `json:"dem_resolution_m"`
+	ComputeMs      int64               `json:"compute_ms"`
+	FresnelTable   []FresnelTablePoint `json:"fresnel_table"`
 }
 
 type RadialSimulationResponse struct {

@@ -64,9 +64,22 @@ func (h *SimulationHandler) Radial(c *gin.Context) {
 	for i, r := range result.Rays {
 		rays[i] = models.RadialSimulationRay{
 			AngleDeg: r.AngleDeg, EndLat: r.EndLat, EndLon: r.EndLon,
-			DistanceM: r.DistanceM, Collided: r.Collided,
-			CollisionLat: r.CollisionLat, CollisionLon: r.CollisionLon,
+			DistanceM: r.DistanceM,
+			// Collided se deriva de LinkStatus, no viene de los.Ray — el
+			// frontend actual todavía no distingue degraded de blocked,
+			// así que ambos cuentan como colisión ahí.
+			Collided:        r.LinkStatus != los.LinkStatusClear,
+			LinkStatus:      string(r.LinkStatus),
+			FresnelClearPct: r.FresnelClearPct,
+			CollisionLat:    r.CollisionLat, CollisionLon: r.CollisionLon,
 			CollisionElevM: r.CollisionElevM,
+		}
+	}
+
+	fresnelTable := make([]models.FresnelTablePoint, len(result.Metadata.FresnelTable))
+	for i, p := range result.Metadata.FresnelTable {
+		fresnelTable[i] = models.FresnelTablePoint{
+			DistanceM: p.DistanceM, FresnelRadiusM: p.FresnelRadiusM, HeightExtraM: p.HeightExtraM,
 		}
 	}
 
@@ -74,7 +87,7 @@ func (h *SimulationHandler) Radial(c *gin.Context) {
 		Rays: rays,
 		Metadata: models.RadialSimulationMetadata{
 			DemSource: result.Metadata.DemSource, DemResolutionM: result.Metadata.DemResolutionM,
-			ComputeMs: result.Metadata.ComputeMs,
+			ComputeMs: result.Metadata.ComputeMs, FresnelTable: fresnelTable,
 		},
 	})
 }

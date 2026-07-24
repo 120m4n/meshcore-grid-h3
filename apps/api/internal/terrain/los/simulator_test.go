@@ -48,8 +48,8 @@ func TestSimulatorRunFlatTerrainNeverCollides(t *testing.T) {
 		t.Fatalf("len(Rays) = %d, want 4", len(resp.Rays))
 	}
 	for _, ray := range resp.Rays {
-		if ray.Collided {
-			t.Errorf("rayo a %v° no debería colisionar contra terreno plano bajo el origen", ray.AngleDeg)
+		if ray.LinkStatus != LinkStatusClear {
+			t.Errorf("rayo a %v° no debería colisionar contra terreno plano bajo el origen, got %v", ray.AngleDeg, ray.LinkStatus)
 		}
 		if ray.DistanceM != 1000 {
 			t.Errorf("rayo a %v°: DistanceM = %v, want 1000", ray.AngleDeg, ray.DistanceM)
@@ -109,8 +109,8 @@ func TestSimulatorRunPartialCoverageTruncatesOnlyAffectedRay(t *testing.T) {
 	// Ninguno de los 2 rayos (norte/sur) cambia longitud significativamente,
 	// así que ambos deben mantenerse dentro de cobertura y llegar a max_distance_m.
 	for _, ray := range resp.Rays {
-		if ray.Collided {
-			t.Errorf("rayo a %v° no debería marcar colisión topográfica (era corte de cobertura o nada)", ray.AngleDeg)
+		if ray.LinkStatus != LinkStatusClear {
+			t.Errorf("rayo a %v° no debería marcar colisión topográfica (era corte de cobertura o nada), got %v", ray.AngleDeg, ray.LinkStatus)
 		}
 	}
 }
@@ -141,8 +141,77 @@ func TestSimulatorRunAppliesOriginHeightAboveTerrain(t *testing.T) {
 	// El terreno a 500m de distancia es 500 < 505: la LOS pasa por encima,
 	// no debería colisionar. (Si OriginHeightM no se sumara al origen,
 	// originElevM quedaría en 500 == terreno y colisionaría por error.)
-	if resp.Rays[0].Collided {
-		t.Errorf("terreno a 500 < originElevM (500+5=505) no debería colisionar, pero Collided=true")
+	if resp.Rays[0].LinkStatus != LinkStatusClear {
+		t.Errorf("terreno a 500 < originElevM (500+5=505) no debería colisionar, pero LinkStatus=%v", resp.Rays[0].LinkStatus)
+	}
+}
+
+func TestSimulatorRunBuildsFresnelTable(t *testing.T) {
+	fake := &fakeElevationProvider{elevAt: func(lat, lon float64) (float64, error) { return 500, nil }}
+	sim := &Simulator{Elevation: fake}
+
+	in := SimulationInput{
+		OriginLat: 7.1193, OriginLon: -73.1227, OriginHeightM: 10,
+		AngleStepDeg: 90, MaxDistanceM: 2000, SampleStepM: 500,
+		EarthCurvature: false, RefractionK: 0.13,
+		StartAngleDeg: 0, EndAngleDeg: 360,
+		FresnelCompensation: true, CompensationFactor: 0.6,
+	}
+	resp, err := sim.Run(context.Background(), in)
+	if err != nil {
+		t.Fatalf("error inesperado: %v", err)
+	}
+
+	table := resp.Metadata.FresnelTable
+	if len(table) != fresnelTableRows+1 {
+		t.Fatalf("len(FresnelTable) = %d, want %d", len(table), fresnelTableRows+1)
+	}
+	if table[0].DistanceM != 0 || table[0].FresnelRadiusM != 0 || table[0].HeightExtraM != 0 {
+		t.Errorf("FresnelTable[0] = %+v, want distancia/radio/altura_extra todos 0", table[0])
+	}
+	last := table[len(table)-1]
+	if last.DistanceM != in.MaxDistanceM {
+		t.Errorf("FresnelTable último punto: DistanceM = %v, want %v", last.DistanceM, in.MaxDistanceM)
+	}
+	wantRadius := FresnelRadiusM(in.MaxDistanceM, defaultFrequencyMHz)
+	if !almostEqual(last.FresnelRadiusM, wantRadius, 1e-6) {
+		t.Errorf("FresnelTable último punto: FresnelRadiusM = %v, want %v", last.FresnelRadiusM, wantRadius)
+	}
+	wantHeightExtra := in.CompensationFactor * wantRadius
+	if !almostEqual(last.HeightExtraM, wantHeightExtra, 1e-6) {
+		t.Errorf("FresnelTable último punto: HeightExtraM = %v, want %v", last.HeightExtraM, wantHeightExtra)
+	}
+}
+
+func TestSimulatorRunFresnelCompensationDegradesRay(t *testing.T) {
+	// origen: terreno 799 + antena 1 = originElevM 800. Muestra a 5000m:
+	// terreno 805, geométricamente despejado (805 > 800, la línea recta
+	// sin compensar colisionaría, pero con h_extra la línea compensada
+	// (≈812.14) sí lo despeja). Aun así el clearance resultante (≈7.14m)
+	// es solo ~35% del radio de Fresnel a esa distancia (≈20.24m) — por
+	// debajo del 60% exigido, así que debe salir degraded, no clear.
+	originLat, originLon := 7.1193, -73.1227
+	fake := &fakeElevationProvider{elevAt: func(lat, lon float64) (float64, error) {
+		if lat == originLat && lon == originLon {
+			return 799, nil
+		}
+		return 805, nil
+	}}
+	sim := &Simulator{Elevation: fake}
+
+	in := SimulationInput{
+		OriginLat: originLat, OriginLon: originLon, OriginHeightM: 1,
+		AngleStepDeg: 360, MaxDistanceM: 5000, SampleStepM: 5000,
+		EarthCurvature: false, RefractionK: 0.13,
+		StartAngleDeg: 0, EndAngleDeg: 360,
+		FresnelCompensation: true, CompensationFactor: 0.6,
+	}
+	resp, err := sim.Run(context.Background(), in)
+	if err != nil {
+		t.Fatalf("error inesperado: %v", err)
+	}
+	if resp.Rays[0].LinkStatus != LinkStatusDegraded {
+		t.Fatalf("LinkStatus = %v, want degraded", resp.Rays[0].LinkStatus)
 	}
 }
 

@@ -80,6 +80,19 @@ func ValidateRequest(req models.RadialSimulationRequest) (SimulationInput, error
 		return SimulationInput{}, fmt.Errorf("end_angle_deg debe ser mayor que start_angle_deg")
 	}
 
+	fresnelCompensation := true
+	if req.FresnelCompensation != nil {
+		fresnelCompensation = *req.FresnelCompensation
+	}
+
+	compensationFactor := defaultCompensationFactor
+	if req.CompensationFactor != nil {
+		compensationFactor = *req.CompensationFactor
+	}
+	if compensationFactor < 0.5 || compensationFactor > 0.7 {
+		return SimulationInput{}, fmt.Errorf("compensation_factor debe estar en [0.5, 0.7]")
+	}
+
 	rayCount := int(math.Ceil((endAngle - startAngle) / angleStep))
 	samplesPerRay := int(math.Ceil(maxDist / sampleStep))
 	total := rayCount * samplesPerRay
@@ -95,5 +108,6 @@ func ValidateRequest(req models.RadialSimulationRequest) (SimulationInput, error
 		AngleStepDeg: angleStep, MaxDistanceM: maxDist, SampleStepM: sampleStep,
 		EarthCurvature: earthCurvature, RefractionK: refractionK,
 		StartAngleDeg: startAngle, EndAngleDeg: endAngle,
+		FresnelCompensation: fresnelCompensation, CompensationFactor: compensationFactor,
 	}, nil
 }

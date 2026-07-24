@@ -21,22 +21,55 @@ const MaxTotalSamples = 8000
 // acá para el pool de goroutines que resuelve elevaciones en paralelo.
 
 type SimulationInput struct {
-	OriginLat      float64
-	OriginLon      float64
-	OriginHeightM  float64
-	AngleStepDeg   float64
-	MaxDistanceM   float64
-	SampleStepM    float64
-	EarthCurvature bool
-	RefractionK    float64
-	StartAngleDeg  float64
-	EndAngleDeg    float64
+	OriginLat           float64
+	OriginLon           float64
+	OriginHeightM       float64
+	AngleStepDeg        float64
+	MaxDistanceM        float64
+	SampleStepM         float64
+	EarthCurvature      bool
+	RefractionK         float64
+	StartAngleDeg       float64
+	EndAngleDeg         float64
+	FresnelCompensation bool
+	CompensationFactor  float64
+}
+
+// FresnelTablePoint es una fila de referencia distancia/radio de
+// Fresnel/altura extra — no participa en la evaluación de rayos, es
+// solo para que el usuario visualice cómo crece la compensación con la
+// distancia (ver fresnelTableRows).
+type FresnelTablePoint struct {
+	DistanceM      float64
+	FresnelRadiusM float64
+	HeightExtraM   float64
 }
 
 type Metadata struct {
 	DemSource      string
 	DemResolutionM float64
 	ComputeMs      int64
+	FresnelTable   []FresnelTablePoint
+}
+
+// fresnelTableRows: cantidad de intervalos de la tabla de referencia
+// distancia-vs-altura-extra (21 puntos equiespaciados de 0 a
+// MaxDistanceM, incluyendo ambos extremos) — fija, independiente de
+// angle_step_deg/sample_step_m, para mantener el payload chico.
+const fresnelTableRows = 20
+
+func buildFresnelTable(maxDistanceM, compensationFactor float64) []FresnelTablePoint {
+	table := make([]FresnelTablePoint, fresnelTableRows+1)
+	for i := 0; i <= fresnelTableRows; i++ {
+		d := maxDistanceM * float64(i) / float64(fresnelTableRows)
+		r := FresnelRadiusM(d, defaultFrequencyMHz)
+		table[i] = FresnelTablePoint{
+			DistanceM:      d,
+			FresnelRadiusM: r,
+			HeightExtraM:   compensationFactor * r,
+		}
+	}
+	return table
 }
 
 type Response struct {
@@ -99,7 +132,7 @@ func (s *Simulator) Run(ctx context.Context, in SimulationInput) (*Response, err
 				ElevM:     elevations[idx],
 			}
 		}
-		rays[i] = EvaluateRay(angles[i], originElevM, samples, in.EarthCurvature, in.RefractionK)
+		rays[i] = EvaluateRay(angles[i], originElevM, samples, in.EarthCurvature, in.RefractionK, in.FresnelCompensation, in.CompensationFactor)
 	}
 
 	return &Response{
@@ -108,6 +141,7 @@ func (s *Simulator) Run(ctx context.Context, in SimulationInput) (*Response, err
 			DemSource:      s.DemSourceLabel,
 			DemResolutionM: s.DemResolutionM,
 			ComputeMs:      time.Since(start).Milliseconds(),
+			FresnelTable:   buildFresnelTable(in.MaxDistanceM, in.CompensationFactor),
 		},
 	}, nil
 }
