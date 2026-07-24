@@ -94,6 +94,16 @@ export function activateArc(): void {
   setActiveTool('arc');
 }
 
+// Un solo click borra todo el estado de medición: la línea/tooltip ya
+// dibujados de ruler y arc, y también cualquier medición a medio hacer
+// (punto A pendiente + preview) — "borrar todo" sin excepciones, no solo
+// mediciones terminadas.
+export function clearAllMeasurements(): void {
+  deactivateMeasureTool();
+  rulerLayer.clearLayers();
+  arcLayer.clearLayers();
+}
+
 function syncToolButtons(): void {
   document.querySelectorAll('mc-tool-button').forEach((el) => {
     el.active = el.tool === activeTool;

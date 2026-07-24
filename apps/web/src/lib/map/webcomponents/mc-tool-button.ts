@@ -1,11 +1,13 @@
 const ICONS: Record<string, string> = {
   ruler: '📏',
   arc: '🧭',
+  eraser: '🗑️',
 };
 
 const LABELS: Record<string, string> = {
   ruler: 'Regla — medir distancia',
   arc: 'Rumbo — medir ángulo desde el norte',
+  eraser: 'Borrar — elimina todas las mediciones',
 };
 
 export class McToolButton extends HTMLElement {
@@ -64,8 +66,9 @@ export class McToolButton extends HTMLElement {
     this.render();
   }
 
-  get tool(): 'ruler' | 'arc' {
-    return this.getAttribute('tool') === 'arc' ? 'arc' : 'ruler';
+  get tool(): 'ruler' | 'arc' | 'eraser' {
+    const value = this.getAttribute('tool');
+    return value === 'arc' || value === 'eraser' ? value : 'ruler';
   }
 
   get active(): boolean {
