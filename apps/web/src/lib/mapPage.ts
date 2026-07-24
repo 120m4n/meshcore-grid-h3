@@ -133,6 +133,21 @@ btnRunRadial.addEventListener('click', async () => {
     return;
   }
 
+  // El ancho del frente de onda tiene que alcanzar al menos para un
+  // paso angular completo — con un ancho menor que angle_step_deg el
+  // barrido termina siendo un solo rayo parado en start_angle_deg, sin
+  // llegar nunca a end_angle_deg (ver Simulator.Run: rayCount =
+  // ceil(ancho/paso)). Se corta acá antes de llamar al backend, mismo
+  // criterio que el resto de esta validación.
+  const wavefrontWidthDeg = endAngleDeg - startAngleDeg;
+  if (wavefrontWidthDeg < angleStepDeg) {
+    showToast(
+      `Frente de onda inválido: el ancho (${wavefrontWidthDeg}°) debe ser mayor o igual al paso angular (${angleStepDeg}°)`,
+      'error'
+    );
+    return;
+  }
+
   const totalPoints = estimateTotalPoints(startAngleDeg, endAngleDeg, angleStepDeg, maxDistanceM, sampleStepM);
   const estimatedMs = (totalPoints / ASSUMED_REQUESTS_PER_SEC) * 1000;
 
