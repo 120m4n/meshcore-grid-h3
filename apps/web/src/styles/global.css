@@ -343,14 +343,17 @@ textarea:focus-visible {
 }
 
 /* HUD flotante "ir a coordenadas" — mismo lenguaje visual que
-   .legend/.radar-panel. Ubicado arriba a la izquierda, por debajo del
-   control de zoom nativo de Leaflet (top-left por defecto) para no
-   superponerse. */
+   .legend/.radar-panel. Ubicado a la derecha del control de zoom
+   nativo de Leaflet (top-left, 10px de margen + 26px de ancho de
+   botón), mismo top que ese control (10px) — requiere que este div
+   esté anidado dentro de #map (ver index.astro) para compartir su
+   contenedor posicionado (position:relative), igual que los controles
+   de Leaflet. */
 .coord-panel {
   position: absolute;
   z-index: 500;
-  left: 0.9rem;
-  top: 8.5rem;
+  left: 44px;
+  top: 10px;
   width: 220px;
   background: rgba(16, 29, 46, 0.92);
   border: 1px solid var(--border-bright);

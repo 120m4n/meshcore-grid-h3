@@ -37,13 +37,19 @@ import '../styles/global.css';
     </nav>
   </header>
 
-  <div id="map"></div>
-
-  <div class="coord-panel" id="coord-panel">
-    <div class="coord-panel-title">Ir a coordenadas</div>
-    <div class="coord-panel-row">
-      <input type="text" id="coord-input" placeholder="lat,lon (ej: 7.12,-73.13)" />
-      <button class="btn-sm btn-secondary" id="btn-coord-go" type="button">Ir</button>
+  <div id="map">
+    <!-- Nido dentro de #map (no como hermano a nivel body) a propósito:
+         #map tiene position:relative, el mismo contenedor que usa
+         Leaflet para posicionar sus propios controles — así
+         .coord-panel puede usar "top: 10px" y coincidir exactamente
+         con el margin-top:10px que Leaflet aplica a sus controles, en
+         vez de un offset en rem adivinado desde el viewport. -->
+    <div class="coord-panel" id="coord-panel">
+      <div class="coord-panel-title">Ir a coordenadas</div>
+      <div class="coord-panel-row">
+        <input type="text" id="coord-input" placeholder="lat,lon (ej: 7.12,-73.13)" />
+        <button class="btn-sm btn-secondary" id="btn-coord-go" type="button">Ir</button>
+      </div>
     </div>
   </div>
 
