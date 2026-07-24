@@ -253,6 +253,40 @@ textarea:focus-visible {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+  /* red de seguridad: si el contenido no entra ni con el modo compacto
+     de abajo (viewport extremadamente bajo), scrollea DENTRO del panel
+     en vez de desbordar en silencio más allá del borde de #map sin
+     ninguna forma de llegar a los botones — eso es lo que pasa hoy sin
+     esto (probado: el documento no gana scroll propio porque html/body
+     tienen height:100% fijo, así que el resto del panel queda
+     inalcanzable, no solo "requiere scroll"). */
+  max-height: calc(100vh - 8rem);
+  overflow-y: auto;
+}
+
+/* Modo compacto: paddings/gaps/inputs más chicos para que el panel
+   completo (título + elegir origen + 6 campos + acciones + progreso)
+   entre sin scroll en el alto de viewport real de una MacBook Air/Pro
+   M1 13" — esa pantalla reporta 1440x900 lógicos por default, y una
+   ventana de navegador maximizada deja ~780-820px de alto disponible
+   después de la barra de menú + chrome del navegador (bastante menos
+   con DevTools abierto o la ventana no maximizada, el caso más común
+   en la práctica). Con pantallas grandes (>820px de alto disponible,
+   ej. un monitor externo) no aplica nada de esto: mismo tamaño de
+   siempre. */
+@media (max-height: 820px) {
+  .radar-panel {
+    padding: 0.5rem 0.6rem;
+    gap: 0.35rem;
+  }
+  .radar-field {
+    gap: 0.1rem;
+  }
+  .radar-field input,
+  .radar-field-row input {
+    padding: 0.2rem 0.35rem;
+    font-size: 0.7rem;
+  }
 }
 .radar-panel-title {
   text-transform: uppercase;
