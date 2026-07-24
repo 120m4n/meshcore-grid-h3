@@ -445,6 +445,21 @@ textarea:focus-visible {
 .leaflet-container a.leaflet-popup-close-button {
   color: var(--text-dim);
 }
+
+/* Label de las herramientas de medición (ruler/arc) — mismo lenguaje
+   visual oscuro que los popups de Leaflet ya restyleados arriba. */
+.measure-tooltip {
+  background: rgba(16, 29, 46, 0.92);
+  color: var(--text);
+  border: 1px solid var(--border-bright);
+  border-radius: 4px;
+  font-family: var(--font-display);
+  font-size: 0.75rem;
+  padding: 0.15rem 0.4rem;
+}
+.measure-tooltip::before {
+  display: none; /* oculta la flechita default de Leaflet tooltip */
+}
 .leaflet-bar a {
   background: var(--surface-raised);
   color: var(--text);

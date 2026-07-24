@@ -1,6 +1,6 @@
 import L from 'leaflet';
 import { map, rulerLayer, arcLayer } from './setup.ts';
-import { cancelOriginPicking } from './radialSimulation.ts';
+import { cancelOriginPicking, formatDistance } from './radialSimulation.ts';
 
 export type MeasureTool = 'ruler' | 'arc';
 
@@ -42,15 +42,27 @@ function syncToolButtons(): void {
   });
 }
 
-// El dibujo real (distancia/rumbo) llega en las Tasks 4 y 5 — por ahora
-// el segundo clic solo cierra el modo, para poder verificar la máquina
-// de estados de forma aislada.
+function drawRuler(a: L.LatLng, b: L.LatLng): void {
+  rulerLayer.clearLayers(); // reemplaza la medición anterior de ruler
+  const distanceM = map.distance(a, b);
+  L.polyline([a, b], { color: '#f1c40f', weight: 2, opacity: 0.85 })
+    .bindTooltip(formatDistance(distanceM), {
+      permanent: true,
+      direction: 'center',
+      className: 'measure-tooltip',
+    })
+    .addTo(rulerLayer)
+    .openTooltip();
+}
+
 export function handleMeasureClick(lat: number, lon: number): void {
   if (activeTool === null) return;
+  const point = L.latLng(lat, lon);
   if (pendingPointA === null) {
-    pendingPointA = L.latLng(lat, lon);
+    pendingPointA = point;
     return;
   }
+  if (activeTool === 'ruler') drawRuler(pendingPointA, point);
   deactivateMeasureTool();
 }
 
@@ -64,8 +76,3 @@ document.addEventListener('keydown', (e: KeyboardEvent) => {
   deactivateMeasureTool();
 });
 
-// rulerLayer/arcLayer todavía no se usan en esta tarea — el import
-// deliberadamente los trae ya para que las Tasks 4/5 no tengan que
-// tocar esta línea de imports.
-void rulerLayer;
-void arcLayer;

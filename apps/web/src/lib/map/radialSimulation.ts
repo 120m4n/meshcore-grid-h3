@@ -118,7 +118,7 @@ export async function runRadialSimulation(input: RadialSimulationRequest): Promi
   }
 }
 
-function formatDistance(distanceM: number): string {
+export function formatDistance(distanceM: number): string {
   return distanceM >= 1000 ? `${(distanceM / 1000).toFixed(2)} km` : `${distanceM.toFixed(0)} m`;
 }
 
