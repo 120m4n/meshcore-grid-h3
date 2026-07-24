@@ -117,8 +117,23 @@ btnRunRadial.addEventListener('click', async () => {
   const angleStepDeg = Number((document.getElementById('radar-angle-step') as HTMLInputElement).value);
   const maxDistanceM = Number((document.getElementById('radar-max-distance') as HTMLInputElement).value);
   const sampleStepM = Number((document.getElementById('radar-sample-step') as HTMLInputElement).value);
+  const startAngleDeg = Number((document.getElementById('radar-start-angle') as HTMLInputElement).value);
+  const endAngleDeg = Number((document.getElementById('radar-end-angle') as HTMLInputElement).value);
 
-  const totalPoints = estimateTotalPoints(angleStepDeg, maxDistanceM, sampleStepM);
+  // Validado acá, antes de llamar al backend, para no disparar una
+  // request que se va a rechazar igual (validate.go tiene la misma
+  // regla como defensa en profundidad, no como primera línea).
+  if (
+    Number.isNaN(startAngleDeg) || Number.isNaN(endAngleDeg) ||
+    startAngleDeg < 0 || startAngleDeg > 360 ||
+    endAngleDeg < 0 || endAngleDeg > 360 ||
+    endAngleDeg <= startAngleDeg
+  ) {
+    showToast('Frente de onda inválido: el ángulo final debe ser mayor que el inicial, ambos entre 0 y 360', 'error');
+    return;
+  }
+
+  const totalPoints = estimateTotalPoints(startAngleDeg, endAngleDeg, angleStepDeg, maxDistanceM, sampleStepM);
   const estimatedMs = (totalPoints / ASSUMED_REQUESTS_PER_SEC) * 1000;
 
   simulationRunning = true;
@@ -143,6 +158,8 @@ btnRunRadial.addEventListener('click', async () => {
     max_distance_m: maxDistanceM,
     sample_step_m: sampleStepM,
     earth_curvature: true,
+    start_angle_deg: startAngleDeg,
+    end_angle_deg: endAngleDeg,
   });
 
   window.clearInterval(progressTimer);
