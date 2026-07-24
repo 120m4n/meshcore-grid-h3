@@ -181,6 +181,11 @@ export interface RadialSimulationRay {
   end_lat: number;
   end_lon: number;
   distance_m: number;
+  link_status: 'clear' | 'degraded' | 'blocked';
+  fresnel_clear_pct: number;
+  // Legado: derivado en el backend de link_status != 'clear'. Ya no se
+  // lee en el frontend (ver radialSimulation.ts), se mantiene en el
+  // tipo por si algo más lo necesita.
   collided: boolean;
   collision_lat: number;
   collision_lon: number;
@@ -193,6 +198,7 @@ export interface RadialSimulationResponse {
     dem_source: string;
     dem_resolution_m: number;
     compute_ms: number;
+    fresnel_table: Array<{ distance_m: number; fresnel_radius_m: number; height_extra_m: number }>;
   };
 }
 

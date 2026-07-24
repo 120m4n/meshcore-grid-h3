@@ -7,6 +7,32 @@ import { deactivateMeasureTool } from './measureTools.ts';
 
 const COLOR_COLLIDED = '#e74c3c';
 const COLOR_CLEAR = '#2ecc71';
+// Naranja, deliberadamente distinto del amarillo #f1c40f que ya usa la
+// leyenda de "Cobertura de señal" (otro panel, no relacionado) — evita
+// que las dos leyendas en pantalla se confundan entre sí.
+const COLOR_DEGRADED = '#e67e22';
+
+function colorForStatus(status: RadialSimulationRay['link_status']): string {
+  switch (status) {
+    case 'blocked':
+      return COLOR_COLLIDED;
+    case 'degraded':
+      return COLOR_DEGRADED;
+    default:
+      return COLOR_CLEAR;
+  }
+}
+
+function popupLabelForStatus(ray: RadialSimulationRay): string {
+  switch (ray.link_status) {
+    case 'blocked':
+      return 'Colisión con terreno';
+    case 'degraded':
+      return `Señal degradada — ${ray.fresnel_clear_pct.toFixed(0)}% de zona de Fresnel libre (mín. 60%)`;
+    default:
+      return 'Alcance máximo';
+  }
+}
 
 let originMarker: L.CircleMarker | null = null;
 let boundaryPolygon: L.Polygon | null = null;
@@ -160,12 +186,12 @@ function drawRays(
         [originLat, originLon],
         [ray.end_lat, ray.end_lon],
       ],
-      { color: ray.collided ? COLOR_COLLIDED : COLOR_CLEAR, weight: 1.5, opacity: 0.75 }
+      { color: colorForStatus(ray.link_status), weight: 1.5, opacity: 0.75 }
     )
       .bindPopup(
         `<strong>Ángulo:</strong> ${ray.angle_deg.toFixed(0)}°<br/>` +
           `<strong>Longitud:</strong> ${formatDistance(ray.distance_m)}<br/>` +
-          `<strong>${ray.collided ? 'Colisión con terreno' : 'Alcance máximo'}</strong>`
+          `<strong>${popupLabelForStatus(ray)}</strong>`
       )
       .addTo(radialLayer);
     boundaryPoints.push([ray.end_lat, ray.end_lon]);
@@ -174,6 +200,10 @@ function drawRays(
   // Polígono de cobertura: une los extremos finales de todos los rayos.
   // Estilo neutral (turquesa, mismo tono que el marcador de origen) para
   // no confundirse con la semántica roja/verde de colisión de cada rayo.
+  // interactive: false — se agrega DESPUÉS de cada rayo (queda arriba en
+  // el z-order de SVG) y su relleno cubre toda el área barrida; sin esto
+  // capturaba el click antes de que llegara a la línea del rayo debajo,
+  // y como el polígono no tiene popup, el click no abría nada.
   if (boundaryPoints.length >= 3) {
     boundaryPolygon = L.polygon(boundaryPoints, {
       color: '#34d7c0',
@@ -181,6 +211,7 @@ function drawRays(
       dashArray: '4 4',
       fillColor: '#34d7c0',
       fillOpacity: 0.08,
+      interactive: false,
     }).addTo(radialLayer);
   }
 }

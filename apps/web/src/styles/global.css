@@ -232,6 +232,23 @@ textarea:focus-visible {
   flex-shrink: 0;
 }
 
+/* Leyenda de estado del enlace, embebida DENTRO de .radar-panel (no
+   flotante como .legend) — .radar-panel ya es un flex-column, así que
+   esta necesita fluir como un item más de ese flex, sin position:
+   absolute (eso es lo que tiene .legend, pensada para flotar sola
+   sobre el mapa: reusarla acá la sacaba del flujo del flex y la hacía
+   flotar sobre el resto del panel, tapando los inputs/botones). Reusa
+   .legend-title/.legend-row/.legend-swatch para el contenido interno,
+   esos sí son seguros de compartir (solo tipografía/flex-row, sin
+   positioning propio). */
+.radar-legend {
+  border-top: 1px solid var(--border-bright);
+  padding-top: 0.5rem;
+  font-family: var(--font-display);
+  font-size: 0.68rem;
+  color: var(--text-dim);
+}
+
 /* HUD flotante de la simulación LOS radial — mismo lenguaje visual que
    .legend (fondo/borde/blur), del lado derecho para no competir con la
    leyenda de cobertura (izquierda) ni el control de capas de Leaflet
@@ -286,6 +303,13 @@ textarea:focus-visible {
   .radar-field-row input {
     padding: 0.2rem 0.35rem;
     font-size: 0.7rem;
+  }
+  .radar-legend {
+    padding-top: 0.35rem;
+  }
+  .radar-legend .legend-row {
+    gap: 0.3rem;
+    line-height: 1.25;
   }
 }
 .radar-panel-title {
