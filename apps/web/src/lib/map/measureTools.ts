@@ -4,8 +4,66 @@ import { cancelOriginPicking, formatDistance } from './radialSimulation.ts';
 
 export type MeasureTool = 'ruler' | 'arc';
 
+const TOOL_COLOR: Record<MeasureTool, string> = {
+  ruler: '#f1c40f',
+  arc: '#9b59b6',
+};
+
 let activeTool: MeasureTool | null = null;
 let pendingPointA: L.LatLng | null = null;
+
+// Punto A ya confirmado (círculo) y línea punteada que sigue al mouse
+// hasta el segundo clic — sin esto, un usuario que activa la
+// herramienta y hace el primer clic no tiene ninguna señal de que la
+// medición ya arrancó hasta completar el segundo clic.
+let previewMarker: L.CircleMarker | null = null;
+let previewLine: L.Polyline | null = null;
+
+function activePreviewLayer(): L.LayerGroup | null {
+  if (activeTool === 'ruler') return rulerLayer;
+  if (activeTool === 'arc') return arcLayer;
+  return null;
+}
+
+function clearPreview(): void {
+  previewMarker?.remove();
+  previewMarker = null;
+  previewLine?.remove();
+  previewLine = null;
+}
+
+function showPointAMarker(a: L.LatLng): void {
+  const layer = activePreviewLayer();
+  if (!layer || activeTool === null) return;
+  const color = TOOL_COLOR[activeTool];
+  previewMarker = L.circleMarker(a, {
+    radius: 5,
+    color,
+    weight: 2,
+    fillColor: color,
+    fillOpacity: 0.9,
+  }).addTo(layer);
+}
+
+function updatePreviewLine(a: L.LatLng, cursor: L.LatLng): void {
+  const layer = activePreviewLayer();
+  if (!layer || activeTool === null) return;
+  if (previewLine) {
+    previewLine.setLatLngs([a, cursor]);
+    return;
+  }
+  previewLine = L.polyline([a, cursor], {
+    color: TOOL_COLOR[activeTool],
+    weight: 2,
+    opacity: 0.6,
+    dashArray: '4 4',
+  }).addTo(layer);
+}
+
+function resetPending(): void {
+  clearPreview();
+  pendingPointA = null;
+}
 
 export function isMeasuring(): boolean {
   return activeTool !== null;
@@ -13,7 +71,7 @@ export function isMeasuring(): boolean {
 
 export function deactivateMeasureTool(): void {
   activeTool = null;
-  pendingPointA = null;
+  resetPending();
   syncToolButtons();
 }
 
@@ -24,7 +82,7 @@ function setActiveTool(tool: MeasureTool): void {
   }
   cancelOriginPicking();
   activeTool = tool;
-  pendingPointA = null;
+  resetPending();
   syncToolButtons();
 }
 
@@ -45,7 +103,7 @@ function syncToolButtons(): void {
 function drawRuler(a: L.LatLng, b: L.LatLng): void {
   rulerLayer.clearLayers(); // reemplaza la medición anterior de ruler
   const distanceM = map.distance(a, b);
-  L.polyline([a, b], { color: '#f1c40f', weight: 2, opacity: 0.85 })
+  L.polyline([a, b], { color: TOOL_COLOR.ruler, weight: 2, opacity: 0.85 })
     .bindTooltip(formatDistance(distanceM), {
       permanent: true,
       direction: 'center',
@@ -72,7 +130,7 @@ function initialBearingDeg(a: L.LatLng, b: L.LatLng): number {
 function drawArc(a: L.LatLng, b: L.LatLng): void {
   arcLayer.clearLayers(); // reemplaza la medición anterior de arc
   const bearingDeg = initialBearingDeg(a, b);
-  L.polyline([a, b], { color: '#9b59b6', weight: 2, opacity: 0.85 })
+  L.polyline([a, b], { color: TOOL_COLOR.arc, weight: 2, opacity: 0.85 })
     .bindTooltip(`${bearingDeg.toFixed(0)}°`, {
       permanent: true,
       direction: 'center',
@@ -87,6 +145,7 @@ export function handleMeasureClick(lat: number, lon: number): void {
   const point = L.latLng(lat, lon);
   if (pendingPointA === null) {
     pendingPointA = point;
+    showPointAMarker(point);
     return;
   }
   if (activeTool === 'ruler') drawRuler(pendingPointA, point);
@@ -96,6 +155,11 @@ export function handleMeasureClick(lat: number, lon: number): void {
 
 map.on('click', (e: L.LeafletMouseEvent) => {
   handleMeasureClick(e.latlng.lat, e.latlng.lng);
+});
+
+map.on('mousemove', (e: L.LeafletMouseEvent) => {
+  if (activeTool === null || pendingPointA === null) return;
+  updatePreviewLine(pendingPointA, e.latlng);
 });
 
 document.addEventListener('keydown', (e: KeyboardEvent) => {
