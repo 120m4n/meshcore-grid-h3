@@ -66,8 +66,14 @@ function setOriginMarker(lat: number, lon: number) {
 // backend es síncrono y no reporta avance real (ver spec kit, decisión
 // de diseño 2), así que esto solo sirve para una barra de progreso
 // ESTIMADA en el cliente, no un porcentaje exacto.
-export function estimateTotalPoints(angleStepDeg: number, maxDistanceM: number, sampleStepM: number): number {
-  const rayCount = Math.ceil(360 / angleStepDeg);
+export function estimateTotalPoints(
+  startAngleDeg: number,
+  endAngleDeg: number,
+  angleStepDeg: number,
+  maxDistanceM: number,
+  sampleStepM: number
+): number {
+  const rayCount = Math.ceil((endAngleDeg - startAngleDeg) / angleStepDeg);
   const samplesPerRay = Math.ceil(maxDistanceM / sampleStepM);
   return rayCount * samplesPerRay + 1;
 }
@@ -85,7 +91,7 @@ export async function runRadialSimulation(input: RadialSimulationRequest): Promi
   activeController = new AbortController();
   try {
     const result = await simulateRadialLOS(input, activeController.signal);
-    drawRays(input.origin_lat, input.origin_lon, result);
+    drawRays(input.origin_lat, input.origin_lon, input.start_angle_deg, input.end_angle_deg, result);
     return 'ok';
   } catch (err) {
     if (err instanceof DOMException && err.name === 'AbortError') {
@@ -103,7 +109,13 @@ function formatDistance(distanceM: number): string {
   return distanceM >= 1000 ? `${(distanceM / 1000).toFixed(2)} km` : `${distanceM.toFixed(0)} m`;
 }
 
-function drawRays(originLat: number, originLon: number, result: RadialSimulationResponse) {
+function drawRays(
+  originLat: number,
+  originLon: number,
+  startAngleDeg: number,
+  endAngleDeg: number,
+  result: RadialSimulationResponse
+) {
   // Limpia solo los rayos previos; el marcador de origen se conserva
   // (se reposiciona más abajo) para no perder de vista dónde se está
   // parado entre una simulación y la siguiente.
@@ -122,8 +134,13 @@ function drawRays(originLat: number, originLon: number, result: RadialSimulation
 
   // result.rays viene en orden angular creciente desde el backend (0°,
   // angle_step_deg, 2*angle_step_deg, ...) — se puede usar directo como
-  // anillo del polígono de cobertura sin reordenar.
-  const boundaryPoints: L.LatLngExpression[] = [];
+  // anillo del polígono de cobertura sin reordenar. Con un frente de
+  // onda parcial (no 0-360 completo) se antepone el origen al anillo
+  // para que el polígono salga como un sector (dos lados rectos desde
+  // el origen + el arco) en vez de una "lente" que corta en línea recta
+  // entre los dos extremos del arco.
+  const isFullCircle = startAngleDeg === 0 && endAngleDeg === 360;
+  const boundaryPoints: L.LatLngExpression[] = isFullCircle ? [] : [[originLat, originLon]];
   for (const ray of result.rays) {
     L.polyline(
       [
