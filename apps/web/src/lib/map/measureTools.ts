@@ -1,5 +1,6 @@
 import L from 'leaflet';
 import { map, rulerLayer, arcLayer } from './setup.ts';
+import { cancelOriginPicking } from './radialSimulation.ts';
 
 export type MeasureTool = 'ruler' | 'arc';
 
@@ -21,6 +22,7 @@ function setActiveTool(tool: MeasureTool): void {
     deactivateMeasureTool();
     return;
   }
+  cancelOriginPicking();
   activeTool = tool;
   pendingPointA = null;
   syncToolButtons();

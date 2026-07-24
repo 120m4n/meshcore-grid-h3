@@ -3,6 +3,7 @@ import { simulateRadialLOS } from '../api.ts';
 import type { RadialSimulationRequest, RadialSimulationResponse } from '../api.ts';
 import { showToast } from '../toast.ts';
 import { map, radialLayer } from './setup.ts';
+import { deactivateMeasureTool } from './measureTools.ts';
 
 const COLOR_COLLIDED = '#e74c3c';
 const COLOR_CLEAR = '#2ecc71';
@@ -22,6 +23,7 @@ let activeController: AbortController | null = null;
 // panel de parámetros (index.astro) usa esto para llenar los campos
 // lat/lon sin que el usuario tenga que tipearlos a mano.
 export function enableOriginPicking(callback: (lat: number, lon: number) => void) {
+  deactivateMeasureTool();
   pickingOrigin = true;
   onOriginPicked = callback;
 }
@@ -33,6 +35,17 @@ export function enableOriginPicking(callback: (lat: number, lon: number) => void
 // L.DomEvent.stopPropagation(e) nunca deja llegar el click hasta acá.
 export function isPickingOrigin(): boolean {
   return pickingOrigin;
+}
+
+// Cancela una selección de origen en curso SIN completar el punto — a
+// diferencia de pickOriginAt(), no llama a onOriginPicked. Lo usa
+// measureTools.ts para garantizar exclusión mutua en el otro sentido:
+// activar ruler/arc mientras se está eligiendo origen debe cancelar esa
+// selección, no dejarla "colgada" esperando un clic que ahora va a
+// interpretarse como punto de medición.
+export function cancelOriginPicking(): void {
+  pickingOrigin = false;
+  onOriginPicked = null;
 }
 
 export function pickOriginAt(lat: number, lon: number) {
