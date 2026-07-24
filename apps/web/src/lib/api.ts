@@ -172,6 +172,8 @@ export interface RadialSimulationRequest {
   sample_step_m: number;
   earth_curvature: boolean;
   refraction_k?: number;
+  start_angle_deg: number;
+  end_angle_deg: number;
 }
 
 export interface RadialSimulationRay {
