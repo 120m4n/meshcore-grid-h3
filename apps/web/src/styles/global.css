@@ -272,6 +272,14 @@ textarea:focus-visible {
   padding: 0.3rem 0.4rem;
   font-size: 0.75rem;
 }
+.radar-field-row {
+  display: flex;
+  gap: 0.4rem;
+}
+.radar-field-row input {
+  flex: 1;
+  min-width: 0;
+}
 .radar-panel-actions {
   display: flex;
   gap: 0.4rem;

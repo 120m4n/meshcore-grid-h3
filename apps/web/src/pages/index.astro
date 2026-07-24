@@ -63,6 +63,13 @@ import '../styles/global.css';
       <input type="number" id="radar-angle-step" value="5" min="1" max="45" step="1" />
     </div>
     <div class="radar-field">
+      <label>Frente de onda (°)</label>
+      <div class="radar-field-row">
+        <input type="number" id="radar-start-angle" value="0" min="0" max="360" step="1" title="Ángulo inicial" />
+        <input type="number" id="radar-end-angle" value="360" min="0" max="360" step="1" title="Ángulo final" />
+      </div>
+    </div>
+    <div class="radar-field">
       <label for="radar-max-distance">Distancia máx. (m)</label>
       <input type="number" id="radar-max-distance" value="8000" min="100" max="100000" step="100" />
     </div>
