@@ -27,9 +27,21 @@ const cartoLight = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/
   attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
   subdomains: 'abcd',
 });
+// Esri World Hillshade: servicio público sin API key, solo relieve
+// sombreado en escala de grises. Nota el orden {z}/{y}/{x} del REST
+// tile scheme de Esri — distinto de los otros 3 basemaps OSM/CARTO
+// ({z}/{x}/{y}). maxNativeZoom 13 (no maxZoom) porque no tiene tiles
+// nativos más allá: maxZoom haría que Leaflet deje de dibujar el layer
+// por completo pasado ese nivel (tileZoom queda undefined en
+// GridLayer._setView); maxNativeZoom en cambio sigue pidiendo el tile
+// de zoom 13 y lo hace upscale para los niveles superiores.
+const hillshade = L.tileLayer(
+  'https://server.arcgisonline.com/ArcGIS/rest/services/Elevation/World_Hillshade/MapServer/tile/{z}/{y}/{x}',
+  { attribution: 'Esri, USGS, NOAA', maxNativeZoom: 13 }
+);
 cartoLight.addTo(map); // default
 L.control.layers(
-  { 'CARTO Light': cartoLight, 'OSM Black': osmBlack, 'OSM': osmLight },
+  { 'CARTO Light': cartoLight, 'OSM Black': osmBlack, 'OSM': osmLight, 'Hillshade': hillshade },
   undefined,
   { position: 'topright' }
 ).addTo(map);
