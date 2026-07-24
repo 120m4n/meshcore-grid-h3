@@ -1,5 +1,6 @@
 import L from 'leaflet';
 import { CENTER, SANTANDER_BOUNDS, MIN_ZOOM, MAX_ZOOM } from '../mapBounds.ts';
+import './webcomponents/mc-map-toolbar.ts';
 
 export const map = L.map('map', {
   center: CENTER,
@@ -44,3 +45,22 @@ export const testLayer = L.layerGroup().addTo(map);
 export const originsLayer = L.layerGroup().addTo(map);
 export const userLocationLayer = L.layerGroup().addTo(map);
 export const radialLayer = L.layerGroup().addTo(map);
+export const rulerLayer = L.layerGroup().addTo(map);
+export const arcLayer = L.layerGroup().addTo(map);
+
+// Control propio para la barra de herramientas de medición — 'topleft'
+// porque 'topright' ya lo usa el selector de capas base. Apila debajo
+// del control de zoom nativo (+/-), que Leaflet agrega automáticamente
+// a ese mismo rincón antes de que este código corra.
+const MeasureToolbarControl = L.Control.extend({
+  options: { position: 'topleft' },
+  onAdd(): HTMLElement {
+    const toolbar = document.createElement('mc-map-toolbar');
+    // Sin esto, un clic en los botones de la toolbar también llegaría a
+    // map.on('click', ...) (measureTools.ts lo agrega) y se
+    // interpretaría como un punto de medición sobre el mapa.
+    L.DomEvent.disableClickPropagation(toolbar);
+    return toolbar;
+  },
+});
+new MeasureToolbarControl().addTo(map);
