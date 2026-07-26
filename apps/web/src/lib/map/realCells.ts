@@ -9,6 +9,8 @@ import { map, cellLayer, originsLayer } from './setup.ts';
 import { realIndexes, cellPolygons, isTestModeEnabled } from './state.ts';
 import { getLastKnownPosition } from './geolocation.ts';
 import { copyReportMessage } from './reportMessage.ts';
+import { isPickingOrigin, pickOriginAt } from './radialSimulation.ts';
+import { isMeasuring, handleMeasureClick } from './measureTools.ts';
 
 const CELLS_LAST_FETCH_KEY = 'meshcore:cells-last-fetch';
 
@@ -50,6 +52,24 @@ export async function loadCells(isAdmin: boolean) {
       // creador/eliminador de celdas de prueba del mapa
       polygon.on('click', (e) => {
         L.DomEvent.stopPropagation(e);
+
+        if (isMeasuring()) {
+          polygon.closePopup();
+          handleMeasureClick(e.latlng.lat, e.latlng.lng);
+          return;
+        }
+
+        // Eligiendo origen para la simulación LOS 360°: bindPopup ya
+        // abrió el popup de info (su listener de click corrió antes que
+        // este), así que hay que cerrarlo a mano en vez de solo "no
+        // abrirlo". Corta acá — nada de info de celda ni de reporte
+        // mientras se está fijando el origen.
+        if (isPickingOrigin()) {
+          polygon.closePopup();
+          pickOriginAt(e.latlng.lat, e.latlng.lng);
+          return;
+        }
+
         showCellOrigins(cell.h3_index); // ver info siempre, sin importar dónde esté parado
 
         // Encadenar el reporte: una celda ya reportada puede seguir

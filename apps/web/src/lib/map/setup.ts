@@ -1,5 +1,6 @@
 import L from 'leaflet';
 import { CENTER, SANTANDER_BOUNDS, MIN_ZOOM, MAX_ZOOM } from '../mapBounds.ts';
+import './webcomponents/mc-map-toolbar.ts';
 
 export const map = L.map('map', {
   center: CENTER,
@@ -26,9 +27,21 @@ const cartoLight = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/
   attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
   subdomains: 'abcd',
 });
+// Esri World Hillshade: servicio público sin API key, solo relieve
+// sombreado en escala de grises. Nota el orden {z}/{y}/{x} del REST
+// tile scheme de Esri — distinto de los otros 3 basemaps OSM/CARTO
+// ({z}/{x}/{y}). maxNativeZoom 13 (no maxZoom) porque no tiene tiles
+// nativos más allá: maxZoom haría que Leaflet deje de dibujar el layer
+// por completo pasado ese nivel (tileZoom queda undefined en
+// GridLayer._setView); maxNativeZoom en cambio sigue pidiendo el tile
+// de zoom 13 y lo hace upscale para los niveles superiores.
+const hillshade = L.tileLayer(
+  'https://server.arcgisonline.com/ArcGIS/rest/services/Elevation/World_Hillshade/MapServer/tile/{z}/{y}/{x}',
+  { attribution: 'Esri, USGS, NOAA', maxNativeZoom: 13 }
+);
 cartoLight.addTo(map); // default
 L.control.layers(
-  { 'CARTO Light': cartoLight, 'OSM Black': osmBlack, 'OSM': osmLight },
+  { 'CARTO Light': cartoLight, 'OSM Black': osmBlack, 'OSM': osmLight, 'Hillshade': hillshade },
   undefined,
   { position: 'topright' }
 ).addTo(map);
@@ -43,3 +56,23 @@ export const cellLayer = L.layerGroup().addTo(map);
 export const testLayer = L.layerGroup().addTo(map);
 export const originsLayer = L.layerGroup().addTo(map);
 export const userLocationLayer = L.layerGroup().addTo(map);
+export const radialLayer = L.layerGroup().addTo(map);
+export const rulerLayer = L.layerGroup().addTo(map);
+export const arcLayer = L.layerGroup().addTo(map);
+
+// Control propio para la barra de herramientas de medición — 'topleft'
+// porque 'topright' ya lo usa el selector de capas base. Apila debajo
+// del control de zoom nativo (+/-), que Leaflet agrega automáticamente
+// a ese mismo rincón antes de que este código corra.
+const MeasureToolbarControl = L.Control.extend({
+  options: { position: 'topleft' },
+  onAdd(): HTMLElement {
+    const toolbar = document.createElement('mc-map-toolbar');
+    // Sin esto, un clic en los botones de la toolbar también llegaría a
+    // map.on('click', ...) (measureTools.ts lo agrega) y se
+    // interpretaría como un punto de medición sobre el mapa.
+    L.DomEvent.disableClickPropagation(toolbar);
+    return toolbar;
+  },
+});
+new MeasureToolbarControl().addTo(map);

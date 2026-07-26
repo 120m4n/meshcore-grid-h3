@@ -37,7 +37,69 @@ import '../styles/global.css';
     </nav>
   </header>
 
-  <div id="map"></div>
+  <div id="map">
+    <!-- Nido dentro de #map (no como hermano a nivel body) a propósito:
+         #map tiene position:relative, el mismo contenedor que usa
+         Leaflet para posicionar sus propios controles — así
+         .coord-panel puede usar "top: 10px" y coincidir exactamente
+         con el margin-top:10px que Leaflet aplica a sus controles, en
+         vez de un offset en rem adivinado desde el viewport. -->
+    <div class="coord-panel" id="coord-panel">
+      <div class="coord-panel-title">Ir a coordenadas</div>
+      <div class="coord-panel-row">
+        <input type="text" id="coord-input" placeholder="lat,lon (ej: 7.12,-73.13)" />
+        <button class="btn-sm btn-secondary" id="btn-coord-go" type="button">Ir</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="radar-panel" id="radar-panel" hidden>
+    <div class="radar-panel-title">Simulación LOS 360°</div>
+    <button class="btn-sm btn-secondary" id="btn-pick-origin" type="button">Elegir origen en el mapa</button>
+    <div class="radar-field">
+      <label for="radar-origin">Origen</label>
+      <span id="radar-origin">— clic en el mapa —</span>
+    </div>
+    <div class="radar-field">
+      <label for="radar-height">Altura de antena (m)</label>
+      <input type="number" id="radar-height" value="15" min="0" max="9000" step="1" />
+    </div>
+    <div class="radar-field">
+      <label for="radar-angle-step">Paso angular (°)</label>
+      <input type="number" id="radar-angle-step" value="5" min="1" max="45" step="1" />
+    </div>
+    <div class="radar-field">
+      <label>Frente de onda (°)</label>
+      <div class="radar-field-row">
+        <input type="number" id="radar-start-angle" value="0" min="0" max="360" step="1" title="Ángulo inicial" />
+        <input type="number" id="radar-end-angle" value="360" min="0" max="360" step="1" title="Ángulo final" />
+      </div>
+    </div>
+    <div class="radar-field">
+      <label for="radar-max-distance">Distancia máx. (m)</label>
+      <input type="number" id="radar-max-distance" value="8000" min="100" max="100000" step="100" />
+    </div>
+    <div class="radar-field">
+      <label for="radar-sample-step">Paso de muestreo (m)</label>
+      <input type="number" id="radar-sample-step" value="100" min="5" max="250" step="5" />
+    </div>
+    <div class="radar-panel-actions">
+      <button class="btn-sm btn-secondary" id="btn-run-radial" type="button" disabled>▶ Simular</button>
+      <button class="btn-sm btn-danger" id="btn-clear-radial" type="button">Limpiar</button>
+    </div>
+    <div class="radar-legend">
+      <div class="legend-title">Estado del enlace</div>
+      <div class="legend-row"><span class="legend-swatch" style="background:#2ecc71"></span>Despejado</div>
+      <div class="legend-row"><span class="legend-swatch" style="background:#e67e22"></span>Degradado (Fresnel)</div>
+      <div class="legend-row"><span class="legend-swatch" style="background:#e74c3c"></span>Bloqueado</div>
+    </div>
+    <div class="radar-progress" id="radar-progress" hidden>
+      <div class="radar-progress-track">
+        <div class="radar-progress-fill" id="radar-progress-fill"></div>
+      </div>
+      <span id="radar-progress-label"></span>
+    </div>
+  </div>
 
   <div class="legend">
     <div class="legend-title">Cobertura de señal</div>

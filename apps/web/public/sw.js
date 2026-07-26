@@ -1,8 +1,9 @@
 // Service worker de caché para la app MeshCore.
 //
 // Estrategias:
-//   - Tiles de mapa (OSM / CARTO): cache-first — los tiles rara vez cambian
-//     y son el mayor consumo de ancho de banda en 3G/LTE.
+//   - Tiles de mapa (OSM / CARTO / Esri Hillshade): cache-first — los
+//     tiles rara vez cambian y son el mayor consumo de ancho de banda
+//     en 3G/LTE.
 //   - App shell (JS/CSS de /_astro/): cache-first con actualización
 //     en background — los archivos tienen hash de contenido, así que una
 //     URL nueva es siempre un recurso nuevo; la versión anterior sigue
@@ -20,6 +21,7 @@ const CACHE_API   = `meshcore-api-${CACHE_VERSION}`;
 const TILE_HOSTS = [
   'tile.openstreetmap.org',
   'basemaps.cartocdn.com',
+  'server.arcgisonline.com',
 ];
 
 // Máxima antigüedad aceptable para la caché de cells (10 minutos).

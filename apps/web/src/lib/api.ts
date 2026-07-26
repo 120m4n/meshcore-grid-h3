@@ -127,7 +127,6 @@ export function createReport(input: {
   plus_code?: string;
   reporter_display_name?: string;
   signal_quality: string;
-  network_type?: string;
   message?: string;
 }) {
   return apiFetch('/api/v1/reports', {
@@ -161,4 +160,56 @@ export interface CellOrigin {
 
 export function getCellOrigins(h3Index: string): Promise<CellOrigin[]> {
   return apiFetch(`/api/v1/cells/${h3Index}/origins`);
+}
+
+export interface RadialSimulationRequest {
+  origin_lat: number;
+  origin_lon: number;
+  origin_height_m: number;
+  angle_step_deg: number;
+  max_distance_m: number;
+  sample_step_m: number;
+  earth_curvature: boolean;
+  refraction_k?: number;
+  start_angle_deg: number;
+  end_angle_deg: number;
+}
+
+export interface RadialSimulationRay {
+  angle_deg: number;
+  end_lat: number;
+  end_lon: number;
+  distance_m: number;
+  link_status: 'clear' | 'degraded' | 'blocked';
+  fresnel_clear_pct: number;
+  // Legado: derivado en el backend de link_status != 'clear'. Ya no se
+  // lee en el frontend (ver radialSimulation.ts), se mantiene en el
+  // tipo por si algo más lo necesita.
+  collided: boolean;
+  collision_lat: number;
+  collision_lon: number;
+  collision_elev_m: number;
+}
+
+export interface RadialSimulationResponse {
+  rays: RadialSimulationRay[];
+  metadata: {
+    dem_source: string;
+    dem_resolution_m: number;
+    compute_ms: number;
+    fresnel_table: Array<{ distance_m: number; fresnel_radius_m: number; height_extra_m: number }>;
+  };
+}
+
+// Endpoint admin-only (requiere JWT con role=admin) — ver
+// middleware.RequireAdmin en el router.
+export function simulateRadialLOS(
+  input: RadialSimulationRequest,
+  signal?: AbortSignal
+): Promise<RadialSimulationResponse> {
+  return apiFetch('/api/v1/admin/simulations/radial', {
+    method: 'POST',
+    body: JSON.stringify(input),
+    signal,
+  });
 }

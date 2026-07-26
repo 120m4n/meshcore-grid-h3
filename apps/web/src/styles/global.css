@@ -232,6 +232,198 @@ textarea:focus-visible {
   flex-shrink: 0;
 }
 
+/* Leyenda de estado del enlace, embebida DENTRO de .radar-panel (no
+   flotante como .legend) — .radar-panel ya es un flex-column, así que
+   esta necesita fluir como un item más de ese flex, sin position:
+   absolute (eso es lo que tiene .legend, pensada para flotar sola
+   sobre el mapa: reusarla acá la sacaba del flujo del flex y la hacía
+   flotar sobre el resto del panel, tapando los inputs/botones). Reusa
+   .legend-title/.legend-row/.legend-swatch para el contenido interno,
+   esos sí son seguros de compartir (solo tipografía/flex-row, sin
+   positioning propio). */
+.radar-legend {
+  border-top: 1px solid var(--border-bright);
+  padding-top: 0.5rem;
+  font-family: var(--font-display);
+  font-size: 0.68rem;
+  color: var(--text-dim);
+}
+
+/* HUD flotante de la simulación LOS radial — mismo lenguaje visual que
+   .legend (fondo/borde/blur), del lado derecho para no competir con la
+   leyenda de cobertura (izquierda) ni el control de capas de Leaflet
+   (top-right, dentro del mapa, no del viewport). */
+.radar-panel {
+  position: absolute;
+  z-index: 500;
+  right: 0.9rem;
+  top: 7rem;
+  width: 220px;
+  background: rgba(16, 29, 46, 0.92);
+  border: 1px solid var(--border-bright);
+  border-radius: 6px;
+  padding: 0.7rem 0.8rem;
+  font-family: var(--font-display);
+  font-size: 0.7rem;
+  color: var(--text-dim);
+  backdrop-filter: blur(4px);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  /* red de seguridad: si el contenido no entra ni con el modo compacto
+     de abajo (viewport extremadamente bajo), scrollea DENTRO del panel
+     en vez de desbordar en silencio más allá del borde de #map sin
+     ninguna forma de llegar a los botones — eso es lo que pasa hoy sin
+     esto (probado: el documento no gana scroll propio porque html/body
+     tienen height:100% fijo, así que el resto del panel queda
+     inalcanzable, no solo "requiere scroll"). */
+  max-height: calc(100vh - 8rem);
+  overflow-y: auto;
+}
+
+/* Mismo caso que ".form-container form[hidden]" más abajo: el "display:
+   flex" de arriba le gana a la regla del user-agent "[hidden] { display:
+   none }", así que el atributo hidden por sí solo NO ocultaba nada. Sin
+   este override el panel de simulación (admin-only, revelado desde
+   mapPage.ts solo si role === 'admin') quedaba visible e interactuable
+   para cualquier visitante, incluso sin sesión. */
+.radar-panel[hidden] { display: none; }
+
+/* Modo compacto: paddings/gaps/inputs más chicos para que el panel
+   completo (título + elegir origen + 6 campos + acciones + progreso)
+   entre sin scroll en el alto de viewport real de una MacBook Air/Pro
+   M1 13" — esa pantalla reporta 1440x900 lógicos por default, y una
+   ventana de navegador maximizada deja ~780-820px de alto disponible
+   después de la barra de menú + chrome del navegador (bastante menos
+   con DevTools abierto o la ventana no maximizada, el caso más común
+   en la práctica). Con pantallas grandes (>820px de alto disponible,
+   ej. un monitor externo) no aplica nada de esto: mismo tamaño de
+   siempre. */
+@media (max-height: 820px) {
+  .radar-panel {
+    padding: 0.5rem 0.6rem;
+    gap: 0.35rem;
+  }
+  .radar-field {
+    gap: 0.1rem;
+  }
+  .radar-field input,
+  .radar-field-row input {
+    padding: 0.2rem 0.35rem;
+    font-size: 0.7rem;
+  }
+  .radar-legend {
+    padding-top: 0.35rem;
+  }
+  .radar-legend .legend-row {
+    gap: 0.3rem;
+    line-height: 1.25;
+  }
+}
+.radar-panel-title {
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text);
+}
+.radar-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+.radar-field input {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--border-bright);
+  border-radius: 4px;
+  color: var(--text);
+  padding: 0.3rem 0.4rem;
+  font-size: 0.75rem;
+}
+.radar-field-row {
+  display: flex;
+  gap: 0.4rem;
+}
+.radar-field-row input {
+  flex: 1;
+  min-width: 0;
+}
+.radar-panel-actions {
+  display: flex;
+  gap: 0.4rem;
+}
+.radar-panel-actions .btn-sm {
+  flex: 1;
+}
+.radar-progress {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+/* Ídem .radar-panel[hidden]: sin esto la barra de progreso quedaba
+   visible fuera de una simulación en curso, porque mapPage.ts la
+   apaga con `radarProgress.hidden = true` y el display:flex de arriba
+   le ganaba a [hidden]. */
+.radar-progress[hidden] { display: none; }
+.radar-progress-track {
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+.radar-progress-fill {
+  height: 100%;
+  width: 0%;
+  background: var(--accent);
+  transition: width 0.25s linear;
+}
+#radar-progress-label {
+  color: var(--text-dim);
+}
+
+/* HUD flotante "ir a coordenadas" — mismo lenguaje visual que
+   .legend/.radar-panel. Ubicado a la derecha del control de zoom
+   nativo de Leaflet (top-left, 10px de margen + 26px de ancho de
+   botón), mismo top que ese control (10px) — requiere que este div
+   esté anidado dentro de #map (ver index.astro) para compartir su
+   contenedor posicionado (position:relative), igual que los controles
+   de Leaflet. */
+.coord-panel {
+  position: absolute;
+  z-index: 500;
+  left: 44px;
+  top: 10px;
+  width: 220px;
+  background: rgba(16, 29, 46, 0.92);
+  border: 1px solid var(--border-bright);
+  border-radius: 6px;
+  padding: 0.7rem 0.8rem;
+  font-family: var(--font-display);
+  font-size: 0.7rem;
+  color: var(--text-dim);
+  backdrop-filter: blur(4px);
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.coord-panel-title {
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text);
+}
+.coord-panel-row {
+  display: flex;
+  gap: 0.4rem;
+}
+.coord-panel-row input {
+  flex: 1;
+  min-width: 0;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--border-bright);
+  border-radius: 4px;
+  color: var(--text);
+  padding: 0.3rem 0.4rem;
+  font-size: 0.75rem;
+}
+
 /* HUD de marca flotante sobre el mapa — siempre visible, no interactivo */
 .brand-overlay {
   position: absolute;
@@ -292,6 +484,21 @@ textarea:focus-visible {
 }
 .leaflet-container a.leaflet-popup-close-button {
   color: var(--text-dim);
+}
+
+/* Label de las herramientas de medición (ruler/arc) — mismo lenguaje
+   visual oscuro que los popups de Leaflet ya restyleados arriba. */
+.measure-tooltip {
+  background: rgba(16, 29, 46, 0.92);
+  color: var(--text);
+  border: 1px solid var(--border-bright);
+  border-radius: 4px;
+  font-family: var(--font-display);
+  font-size: 0.75rem;
+  padding: 0.15rem 0.4rem;
+}
+.measure-tooltip::before {
+  display: none; /* oculta la flechita default de Leaflet tooltip */
 }
 .leaflet-bar a {
   background: var(--surface-raised);
@@ -459,6 +666,20 @@ button[type="submit"]:disabled { opacity: 0.5; cursor: not-allowed; }
   cursor: pointer;
 }
 .btn-danger:hover { background: rgba(231, 76, 60, 0.12); }
+
+/* Sin esto, .btn-secondary/.btn-danger deshabilitados apenas se
+   distinguen de su estado normal (son borde/texto sin relleno, no un
+   botón sólido) — a diferencia de button[type="submit"]:disabled de
+   arriba, acá opacity sola no basta. pointer-events:none también anula
+   los :hover de arriba sin necesitar selectores :disabled:hover. */
+.btn-secondary:disabled,
+.btn-danger:disabled {
+  opacity: 0.45;
+  color: var(--text-dim);
+  border-color: var(--border-bright);
+  cursor: not-allowed;
+  pointer-events: none;
+}
 
 /* variante compacta de .btn-secondary/.btn-danger para celdas de tabla
    densas (3-4 acciones por fila) — mismo color/family, min-height más

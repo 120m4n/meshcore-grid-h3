@@ -10,6 +10,7 @@ import (
 	"meshcore-map/api/internal/config"
 	"meshcore-map/api/internal/handlers"
 	"meshcore-map/api/internal/middleware"
+	"meshcore-map/api/internal/terrain/los"
 )
 
 func New(db *sql.DB, cfg config.Config) *gin.Engine {
@@ -30,17 +31,22 @@ func New(db *sql.DB, cfg config.Config) *gin.Engine {
 	// Techo general por IP sobre toda la API pública — no es un límite
 	// pensado para molestar uso normal (el mapa ya tiene su propio TTL
 	// de 45min en el frontend), es un freno a scraping/DDoS básico.
-	r.Use(middleware.RateLimit(middleware.PerHour(300), 60))
+	r.Use(middleware.RateLimit(middleware.PerHour(cfg.GeneralRateLimitPerHour), cfg.GeneralRateLimitBurst))
 
 	// Límite más estricto específico para los endpoints de auth/registro
 	// — son los que más importa frenar contra abuso automatizado.
-	authRateLimit := middleware.RateLimit(middleware.PerHour(10), 5)
+	authRateLimit := middleware.RateLimit(middleware.PerHour(cfg.AuthRateLimitPerHour), cfg.AuthRateLimitBurst)
 
 	authH := &handlers.AuthHandler{DB: db, Cfg: cfg}
 	reportH := &handlers.ReportHandler{DB: db, Cfg: cfg}
 	cellH := &handlers.CellHandler{DB: db}
 	adminH := &handlers.AdminHandler{DB: db}
 	inviteH := &handlers.InviteHandler{DB: db}
+	simH := &handlers.SimulationHandler{
+		Elevation:      los.NewHTTPElevationProvider(cfg.DemAPIURL, cfg.DemMaxRequestsPerSec),
+		DemSourceLabel: cfg.DemSourceLabel,
+		DemResolutionM: cfg.DemResolutionM,
+	}
 
 	v1 := r.Group("/api/v1")
 	{
@@ -67,6 +73,7 @@ func New(db *sql.DB, cfg config.Config) *gin.Engine {
 				admin.DELETE("/cells/:h3_index/score", adminH.RevertCellScore)
 				admin.POST("/invite-codes", inviteH.Generate)
 				admin.GET("/invite-codes", inviteH.List)
+				admin.POST("/simulations/radial", middleware.RateLimit(middleware.PerHour(cfg.SimulationsRateLimitPerHour), cfg.SimulationsRateLimitBurst), simH.Radial)
 			}
 		}
 	}

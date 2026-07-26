@@ -13,6 +13,8 @@ import {
   startLiveUserLocation,
 } from './geolocation.ts';
 import { copyReportMessage } from './reportMessage.ts';
+import { isPickingOrigin, pickOriginAt } from './radialSimulation.ts';
+import { isMeasuring, handleMeasureClick } from './measureTools.ts';
 
 // ============ celdas de prueba (mock, solo localStorage) ============
 // No toca el backend ni cell_agg real. Sirve para probar la interacción
@@ -61,6 +63,16 @@ function renderTestCell(cell: TestCell) {
   `);
   polygon.on('click', (e) => {
     L.DomEvent.stopPropagation(e);
+    if (isMeasuring()) {
+      polygon.closePopup();
+      handleMeasureClick(e.latlng.lat, e.latlng.lng);
+      return;
+    }
+    if (isPickingOrigin()) {
+      polygon.closePopup();
+      pickOriginAt(e.latlng.lat, e.latlng.lng);
+      return;
+    }
     removeTestCell(cell.h3_index);
   });
 }
@@ -108,6 +120,7 @@ let hasStartedLiveWatch = false;
 // plus code copiado siempre sale de esa posición GPS, nunca del punto
 // exacto donde cayó el click.
 async function handleMapClick(e: L.LeafletMouseEvent) {
+  if (isMeasuring()) return; // measureTools.ts ya procesó este clic vía su propio map.on('click')
   if (!isTestModeEnabled()) return;
   const h3Index = latLngToCell(e.latlng.lat, e.latlng.lng, H3_RESOLUTION);
   if (realIndexes.has(h3Index)) return; // no pisar datos reales aprobados

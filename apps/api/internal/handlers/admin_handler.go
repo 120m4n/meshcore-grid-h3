@@ -24,13 +24,12 @@ func (h *AdminHandler) ListReports(c *gin.Context) {
 	query := `
 		SELECT r.id, r.h3_index, r.h3_resolution, r.lat, r.lon, r.input_method,
 		       r.input_raw, r.reporter_id, u.display_name, rdn.display_name,
-		       r.signal_quality, COALESCE(rnt.network_type, 'desconocido'),
+		       r.signal_quality,
 		       r.message, r.status, r.reviewed_by,
 		       r.reviewed_at, r.created_at
 		FROM reports r
 		JOIN users u ON u.id = r.reporter_id
-		LEFT JOIN report_display_names rdn ON rdn.report_id = r.id
-		LEFT JOIN report_network_types rnt ON rnt.report_id = r.id`
+		LEFT JOIN report_display_names rdn ON rdn.report_id = r.id`
 	args := []any{}
 	if status != "" {
 		query += " WHERE r.status = ?"
@@ -51,7 +50,7 @@ func (h *AdminHandler) ListReports(c *gin.Context) {
 		var displayName sql.NullString
 		if err := rows.Scan(&r.ID, &r.H3Index, &r.H3Resolution, &r.Lat, &r.Lon,
 			&r.InputMethod, &r.InputRaw, &r.ReporterID, &r.ReporterName, &displayName,
-			&r.SignalQuality, &r.NetworkType,
+			&r.SignalQuality,
 			&r.Message, &r.Status, &r.ReviewedBy, &r.ReviewedAt,
 			&r.CreatedAt); err != nil {
 			continue

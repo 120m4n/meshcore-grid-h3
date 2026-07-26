@@ -16,3 +16,7 @@ infra/.env*
 # settings locales de Claude Code (permisos por máquina, no compartidos)
 .claude/settings.local.json
 infra/traefik.example
+reportes_fallidos.txt
+infra/bulk/reportar_sin_cobertura.py
+apps/web/.astro/settings.json
+apps/web/.astro/settings.json
