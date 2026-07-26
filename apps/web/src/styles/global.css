@@ -281,6 +281,14 @@ textarea:focus-visible {
   overflow-y: auto;
 }
 
+/* Mismo caso que ".form-container form[hidden]" más abajo: el "display:
+   flex" de arriba le gana a la regla del user-agent "[hidden] { display:
+   none }", así que el atributo hidden por sí solo NO ocultaba nada. Sin
+   este override el panel de simulación (admin-only, revelado desde
+   mapPage.ts solo si role === 'admin') quedaba visible e interactuable
+   para cualquier visitante, incluso sin sesión. */
+.radar-panel[hidden] { display: none; }
+
 /* Modo compacto: paddings/gaps/inputs más chicos para que el panel
    completo (título + elegir origen + 6 campos + acciones + progreso)
    entre sin scroll en el alto de viewport real de una MacBook Air/Pro
@@ -350,6 +358,11 @@ textarea:focus-visible {
   flex-direction: column;
   gap: 0.3rem;
 }
+/* Ídem .radar-panel[hidden]: sin esto la barra de progreso quedaba
+   visible fuera de una simulación en curso, porque mapPage.ts la
+   apaga con `radarProgress.hidden = true` y el display:flex de arriba
+   le ganaba a [hidden]. */
+.radar-progress[hidden] { display: none; }
 .radar-progress-track {
   height: 6px;
   border-radius: 3px;

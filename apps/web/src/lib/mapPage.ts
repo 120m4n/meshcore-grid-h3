@@ -59,9 +59,13 @@ if (isAdmin) {
   document.getElementById('nav-admin')!.hidden = false;
 }
 
-// Panel de simulación LOS 360° — disponible para cualquier visitante,
-// mismo criterio que el mapa público (GET /cells): visualización de
-// solo lectura/cómputo, no requiere sesión.
+// Panel de simulación LOS 360° — solo admin (ver también
+// middleware.RequireAdmin en POST /admin/simulations/radial): el panel
+// arranca hidden en index.astro y acá se revela únicamente si isAdmin.
+if (isAdmin) {
+  document.getElementById('radar-panel')!.hidden = false;
+}
+
 let pickedOrigin: { lat: number; lon: number } | null = null;
 
 const radarOriginLabel = document.getElementById('radar-origin')!;

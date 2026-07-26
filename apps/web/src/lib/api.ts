@@ -127,7 +127,6 @@ export function createReport(input: {
   plus_code?: string;
   reporter_display_name?: string;
   signal_quality: string;
-  network_type?: string;
   message?: string;
 }) {
   return apiFetch('/api/v1/reports', {
@@ -202,13 +201,13 @@ export interface RadialSimulationResponse {
   };
 }
 
-// Endpoint público (sin JWT), igual que getCells — visualización de
-// solo lectura/cómputo, ver spec kit docs/superpowers/specs/2026-07-22-radial-los-spec-kit.md.
+// Endpoint admin-only (requiere JWT con role=admin) — ver
+// middleware.RequireAdmin en el router.
 export function simulateRadialLOS(
   input: RadialSimulationRequest,
   signal?: AbortSignal
 ): Promise<RadialSimulationResponse> {
-  return apiFetch('/api/v1/simulations/radial', {
+  return apiFetch('/api/v1/admin/simulations/radial', {
     method: 'POST',
     body: JSON.stringify(input),
     signal,

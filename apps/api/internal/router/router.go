@@ -55,7 +55,6 @@ func New(db *sql.DB, cfg config.Config) *gin.Engine {
 		v1.POST("/auth/invite-codes/validate", authRateLimit, inviteH.Validate)
 		v1.GET("/cells", cellH.List)
 		v1.GET("/cells/:h3_index/origins", cellH.Origins)
-		v1.POST("/simulations/radial", middleware.RateLimit(middleware.PerHour(cfg.SimulationsRateLimitPerHour), cfg.SimulationsRateLimitBurst), simH.Radial)
 
 		authed := v1.Group("")
 		authed.Use(middleware.RequireAuth(cfg.JWTSecret))
@@ -74,6 +73,7 @@ func New(db *sql.DB, cfg config.Config) *gin.Engine {
 				admin.DELETE("/cells/:h3_index/score", adminH.RevertCellScore)
 				admin.POST("/invite-codes", inviteH.Generate)
 				admin.GET("/invite-codes", inviteH.List)
+				admin.POST("/simulations/radial", middleware.RateLimit(middleware.PerHour(cfg.SimulationsRateLimitPerHour), cfg.SimulationsRateLimitBurst), simH.Radial)
 			}
 		}
 	}
