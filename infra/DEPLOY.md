@@ -109,4 +109,8 @@ docker pull ghcr.io/120m4n/meshcore-web:latest
 3. Despliegue. Desde el directorio infra/ del VPS, según infra/DEPLOY.md:
 
 # backup del DB ANTES de pull/up (Fase 1 de DEPLOY.md; regla de preservación de datos)
+BACKUP_DIR=/home/roman/meshcore/backups
+TS=$(date +%Y%m%d%H%M%S)
+sqlite3 /home/roman/meshcore/data/meshcore.db ".backup '$BACKUP_DIR/meshcore.db.bak-$TS'"
+
 cp data/meshcore.db data/meshcore.db.bak-$(date +%Y%m%d%H%M%S)
