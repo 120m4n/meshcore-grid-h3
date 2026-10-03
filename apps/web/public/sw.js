@@ -13,14 +13,14 @@
 //     garantiza que la app cargue en modo offline/slow con datos recientes.
 //   - Todo lo demás pasa directo a la red sin tocar el caché.
 
-const CACHE_VERSION = 'v2';
+const CACHE_VERSION = 'v3';
 const CACHE_TILES = `meshcore-tiles-${CACHE_VERSION}`;
 const CACHE_SHELL = `meshcore-shell-${CACHE_VERSION}`;
 const CACHE_API   = `meshcore-api-${CACHE_VERSION}`;
 
 const TILE_HOSTS = [
   'tile.openstreetmap.org',
-  'basemaps.cartocdn.com',
+  'maps.wikimedia.org',
   'server.arcgisonline.com',
 ];
 
