@@ -19,13 +19,8 @@ export const map = L.map('map', {
 const osmLight = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
   attribution: '&copy; OpenStreetMap contributors',
 });
-const osmBlack = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-  attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
-  subdomains: 'abcd',
-});
-const cartoLight = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-  attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
-  subdomains: 'abcd',
+const cartoLight = L.tileLayer('https://maps.wikimedia.org/osm-intl/{z}/{x}/{y}.png', {
+  attribution: '&copy; OpenStreetMap contributors &copy; Wikimedia',
 });
 // Esri World Hillshade: servicio público sin API key, solo relieve
 // sombreado en escala de grises. Nota el orden {z}/{y}/{x} del REST
@@ -41,7 +36,7 @@ const hillshade = L.tileLayer(
 );
 cartoLight.addTo(map); // default
 L.control.layers(
-  { 'CARTO Light': cartoLight, 'OSM Black': osmBlack, 'OSM': osmLight, 'Hillshade': hillshade },
+  { 'Wikimedia': cartoLight, 'OSM': osmLight, 'Hillshade': hillshade },
   undefined,
   { position: 'topright' }
 ).addTo(map);
