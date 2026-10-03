@@ -1,0 +1,125 @@
+---
+import '../styles/global.css';
+---
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <meta name="theme-color" content="#0a1420" />
+  <title>Decoder TV — MeshCore Santander</title>
+</head>
+<body>
+  <header class="topbar">
+    <h1 class="brand">
+      <svg class="brand-bars" viewBox="0 0 18 14" aria-hidden="true">
+        <rect x="0" y="8" width="3" height="6" rx="1" />
+        <rect x="5" y="5" width="3" height="9" rx="1" />
+        <rect x="10" y="2" width="3" height="12" rx="1" />
+        <rect x="15" y="0" width="3" height="14" rx="1" />
+      </svg>
+      Decoder TV
+    </h1>
+    <nav><a href="/">Volver al mapa</a></nav>
+  </header>
+
+  <main class="tv-page">
+    <section class="tv-card">
+      <textarea id="in" aria-label="Salida de tv 0" placeholder="Pega la salida de `tv 0` (una línea por página)"></textarea>
+      <div class="tv-row">
+        <button id="go" class="tv-primary">Decodificar</button>
+        <button id="toggle" aria-pressed="true">Gráficas: on</button>
+        <button id="csv" disabled>Copiar CSV</button>
+        <label><input type="checkbox" id="local" /> hora local</label>
+      </div>
+    </section>
+    <span id="info" class="tv-chip" hidden></span>
+    <div id="empty" class="tv-empty">Pega la salida de <code>tv 0</code> y pulsa Decodificar.</div>
+    <div id="err" class="tv-banner tv-err" role="alert" hidden></div>
+    <div id="warn" class="tv-banner tv-warn" hidden></div>
+    <div id="tabs" class="tv-tabs" role="tablist" aria-label="Líneas decodificadas" hidden></div>
+    <div id="panel" role="tabpanel" hidden>
+      <section id="charts" class="tv-card"></section>
+      <section class="tv-card tv-tbl-wrap"><table id="tbl"><thead></thead><tbody></tbody></table></section>
+      <section class="tv-card tv-next">
+        <span>Siguiente consulta</span><code id="next"></code><button id="copynext">Copiar</button>
+      </section>
+    </div>
+  </main>
+
+  <script src="../lib/tvPage.ts"></script>
+</body>
+</html>
+
+<style is:global>
+  .tv-page {
+    --tv-ink: var(--text); --tv-ink-2: var(--text-dim);
+    --tv-grid: rgba(255, 255, 255, 0.12); --tv-line: var(--border-bright);
+    --tv-series: var(--accent); --tv-on-series: var(--accent-text); --tv-tint: rgba(52, 215, 192, 0.15);
+    --tv-warn-bg: #3a2e10; --tv-warn-ink: #ffd98a; --tv-err-bg: #3b1717; --tv-err-ink: #ffb4b4;
+    max-width: 640px; width: 100%; margin: 0 auto; padding: 0 0.75rem 1.5rem;
+    display: flex; flex-direction: column; gap: 0.6rem;
+  }
+  .tv-page [hidden] { display: none !important; }
+  .tv-page :focus-visible { outline: 2px solid var(--tv-series); outline-offset: 2px; }
+  .tv-card { background: var(--surface); border: 1px solid var(--tv-line); border-radius: 8px; padding: 0.6rem; }
+  .tv-chip { align-self: flex-start; font-size: 0.8125rem; padding: 2px 10px; border-radius: 99px; background: var(--tv-tint);
+             border: 1px solid var(--tv-series); font-variant-numeric: tabular-nums; }
+
+  .tv-page textarea { width: 100%; height: 72px; resize: vertical; padding: 8px;
+    font: 12px var(--font-display); background: var(--bg); color: var(--tv-ink);
+    border: 1px solid var(--tv-line); border-radius: 6px; }
+  .tv-page textarea:focus { border-color: var(--tv-series); }
+  .tv-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 0.6rem; }
+  .tv-page button { font: inherit; font-size: 0.8125rem; padding: 6px 12px; border-radius: 6px; cursor: pointer;
+    background: var(--surface); color: var(--tv-ink); border: 1px solid var(--tv-line); }
+  .tv-page button:hover:not(:disabled) { border-color: var(--tv-series); }
+  .tv-page button:disabled { opacity: 0.45; cursor: default; }
+  .tv-page button.tv-primary { background: var(--tv-series); color: var(--tv-on-series); border-color: var(--tv-series); font-weight: 600; }
+  .tv-page button[aria-pressed="true"] { background: var(--tv-tint); border-color: var(--tv-series); }
+  /* global.css apila los <label> en columna y da 44px de alto a todo <input>: se revierte para la fila de controles */
+  .tv-row label { margin-left: auto; flex-direction: row; gap: 6px; align-items: center; cursor: pointer; font-size: 0.8125rem; }
+  .tv-page input[type="checkbox"] { min-height: 0; width: auto; padding: 0; margin: 0; }
+
+  .tv-banner { padding: 8px 10px; border-radius: 8px; white-space: pre-wrap; font-size: 0.8125rem; }
+  .tv-banner::before { font-weight: 700; margin-right: 6px; }
+  .tv-warn { background: var(--tv-warn-bg); color: var(--tv-warn-ink); }
+  .tv-warn::before { content: "⚠"; }
+  .tv-err { background: var(--tv-err-bg); color: var(--tv-err-ink); }
+  .tv-err::before { content: "✕"; }
+  .tv-empty { color: var(--tv-ink-2); text-align: center; padding: 1rem; }
+
+  #panel { display: flex; flex-direction: column; gap: 0.6rem; }
+  .tv-tabs { display: flex; gap: 6px; overflow-x: auto; }
+  .tv-tabs button { white-space: nowrap; border-radius: 99px; padding: 3px 12px; }
+  .tv-tabs button[aria-selected="true"] { background: var(--tv-tint); border-color: var(--tv-series); font-weight: 600; }
+
+  #charts { position: relative; }
+  #charts:empty { display: none; }
+  #charts svg { font-size: 11px; display: block; }
+  #charts .t-ink { fill: var(--tv-ink); } #charts .t-mute { fill: var(--tv-ink-2); }
+  #charts .halo { paint-order: stroke; stroke: var(--surface); stroke-width: 3px; }
+  #charts .grid { stroke: var(--tv-grid); }
+  #charts .line { fill: none; stroke: var(--tv-series); stroke-width: 2; stroke-linejoin: round; }
+  #charts .dot { fill: var(--tv-series); stroke: var(--surface); stroke-width: 2; }
+  #charts .ext { fill: var(--surface); stroke: var(--tv-series); stroke-width: 2; }
+  #charts .mean { stroke: var(--tv-ink-2); stroke-width: 1; stroke-dasharray: 4 3; }
+  #charts .cross { stroke: var(--tv-ink-2); stroke-width: 1; }
+  #charts .tip { position: absolute; top: 8px; pointer-events: none; white-space: pre; padding: 4px 8px;
+    background: var(--surface); color: var(--tv-ink); border: 1px solid var(--tv-line); border-radius: 6px; font-size: 0.75rem; }
+
+  .tv-tbl-wrap { padding: 0; max-height: 240px; overflow: auto; }
+  .tv-page table { border-collapse: collapse; width: 100%; margin: 0; font-variant-numeric: tabular-nums; font-size: 0.8125rem; }
+  .tv-page td { border: 0; font-size: 0.8125rem; color: var(--tv-ink); }
+  .tv-page th { position: sticky; top: 0; background: var(--surface); color: var(--tv-ink-2); font-size: 11px;
+    text-transform: uppercase; letter-spacing: 0.04em; border: 0; border-bottom: 1px solid var(--tv-line); }
+  .tv-page th, .tv-page td { padding: 4px 10px; text-align: right; white-space: nowrap; }
+  .tv-page td:last-child, .tv-page th:last-child { text-align: left; }
+  .tv-page tbody tr:nth-child(even) { background: var(--tv-grid); }
+  .tv-page tbody tr:hover { background: var(--tv-tint); }
+
+  .tv-next { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .tv-next span { color: var(--tv-ink-2); }
+  .tv-next code { font: 13px var(--font-display); padding: 2px 8px; border-radius: 4px; background: var(--bg); }
+  .tv-next button { margin-left: auto; }
+</style>
