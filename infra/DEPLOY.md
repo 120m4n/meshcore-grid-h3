@@ -90,3 +90,23 @@ docker compose -f traefik.yml up -d
 no parametrizada por `IMAGE_TAG` como `docker-compose.prod.yml`. Para
 poder rollbackear a un SHA específico sin editar el archivo a mano,
 convendría parametrizarlo igual que el otro compose.
+
+
+### bloqueo
+1. En tu máquina: crea un PAT (classic) solo con el scope read:packages. Entra en GitHub → Settings → Developer settings → Personal access tokens → Tokens (classic). Es mejor que copiar el token de gh, que tiene repo y write:packages.
+2. En el VPS:
+
+# por si hay un login viejo que falla
+docker logout ghcr.io
+
+# login (pega el PAT; evita dejarlo en el historial)
+read -rs GHCR_PAT && echo "$GHCR_PAT" | docker login ghcr.io -u 120m4n --password-stdin; unset GHCR_PAT
+
+# comprueba que las imágenes existen y se pueden leer
+docker pull ghcr.io/120m4n/meshcore-api:latest
+docker pull ghcr.io/120m4n/meshcore-web:latest
+
+3. Despliegue. Desde el directorio infra/ del VPS, según infra/DEPLOY.md:
+
+# backup del DB ANTES de pull/up (Fase 1 de DEPLOY.md; regla de preservación de datos)
+cp data/meshcore.db data/meshcore.db.bak-$(date +%Y%m%d%H%M%S)
