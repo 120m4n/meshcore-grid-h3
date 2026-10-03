@@ -77,3 +77,27 @@ coloreados por señal sobre imagería satelital, leyenda de cobertura,
 branding MeshCore). Es guía de estilo/composición, no el objetivo
 pixel-perfect a replicar — no implica que el mapa base actual (tiles
 OSM estándar) deba cambiar a satélite salvo que se pida explícitamente.
+
+### `/decoder`: decoder público de `tv` (sin login)
+
+`src/pages/decoder.astro` + `src/lib/tvPage.ts` decodifican en el
+navegador la salida del comando `tv 0` / `tv <since>` de un repeater
+MeshCore (vectores v1 base64url): una pestaña por línea válida (máx. 6),
+pestaña «Todas» que junta las del mismo sensor, tabla, gráficas SVG con
+promedio y mín/máx, y copia de CSV / siguiente consulta. Es pública:
+no importa `api.ts`, no lee `token` ni llama a la API, y su enlace
+«Decoder TV» en la topbar de `index.astro` queda fuera de la lógica de
+auth de `mapPage.ts`. Las preferencias (gráficas on/off, hora local) se
+guardan en `localStorage` bajo `meshcore-web.tv-decoder.prefs`.
+
+`src/lib/tv/` (`decoder.ts`, `tabs.ts`, `chart.ts`) es una **copia** de
+`tools/tv_decoder/tv_decoder.ts` y `tools/tv_edge_ext/` del repo MeshCore
+(120m4n/MeshCore-HJ7RMN); cada archivo indica en su cabecera el commit de
+origen y las diferencias. No se editan aquí: para actualizarlos, copiar de
+MeshCore y reaplicar esas diferencias. `node src/lib/tv/check.mjs` valida la
+copia (decoder, tabs, chart). Los estilos de la página viven en un
+`<style is:global>` de `decoder.astro` bajo `.tv-page`, porque el SVG de las
+gráficas se crea dinámicamente y los estilos con scope de Astro no le
+aplican; ahí se revierten reglas globales (`label` en columna, `input` de
+44px, `table`/`td` con borde).
+
