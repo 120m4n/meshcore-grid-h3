@@ -1,7 +1,7 @@
 // Service worker de caché para la app MeshCore.
 //
 // Estrategias:
-//   - Tiles de mapa (OSM / CARTO / Esri Hillshade): cache-first — los
+//   - Tiles de mapa (OSM / Esri): cache-first — los
 //     tiles rara vez cambian y son el mayor consumo de ancho de banda
 //     en 3G/LTE.
 //   - App shell (JS/CSS de /_astro/): cache-first con actualización
@@ -13,14 +13,13 @@
 //     garantiza que la app cargue en modo offline/slow con datos recientes.
 //   - Todo lo demás pasa directo a la red sin tocar el caché.
 
-const CACHE_VERSION = 'v3';
+const CACHE_VERSION = 'v4';
 const CACHE_TILES = `meshcore-tiles-${CACHE_VERSION}`;
 const CACHE_SHELL = `meshcore-shell-${CACHE_VERSION}`;
 const CACHE_API   = `meshcore-api-${CACHE_VERSION}`;
 
 const TILE_HOSTS = [
   'tile.openstreetmap.org',
-  'maps.wikimedia.org',
   'server.arcgisonline.com',
 ];
 

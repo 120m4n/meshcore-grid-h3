@@ -107,8 +107,8 @@ function ensurePickerMap() {
     maxBounds: SANTANDER_BOUNDS,
     maxBoundsViscosity: 1.0,
   });
-  L.tileLayer('https://maps.wikimedia.org/osm-intl/{z}/{x}/{y}.png', {
-    attribution: '&copy; OpenStreetMap contributors &copy; Wikimedia',
+  L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
+    attribution: 'Esri, HERE, Garmin, &copy; OpenStreetMap contributors',
   }).addTo(pickerMap);
 
   pickerMap.on('click', (e: L.LeafletMouseEvent) => {

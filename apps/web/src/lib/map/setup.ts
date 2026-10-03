@@ -19,12 +19,16 @@ export const map = L.map('map', {
 const osmLight = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
   attribution: '&copy; OpenStreetMap contributors',
 });
-const cartoLight = L.tileLayer('https://maps.wikimedia.org/osm-intl/{z}/{x}/{y}.png', {
-  attribution: '&copy; OpenStreetMap contributors &copy; Wikimedia',
-});
+// Esri Canvas (gris claro/oscuro): sin API key, orden {z}/{y}/{x}.
+const esri = (name: string) => L.tileLayer(
+  `https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/${name}/MapServer/tile/{z}/{y}/{x}`,
+  { attribution: 'Esri, HERE, Garmin, &copy; OpenStreetMap contributors' }
+);
+const grayLight = esri('World_Light_Gray_Base');
+const grayDark = esri('World_Dark_Gray_Base');
 // Esri World Hillshade: servicio público sin API key, solo relieve
 // sombreado en escala de grises. Nota el orden {z}/{y}/{x} del REST
-// tile scheme de Esri — distinto de los otros 3 basemaps OSM/CARTO
+// tile scheme de Esri — distinto del basemap OSM
 // ({z}/{x}/{y}). maxNativeZoom 13 (no maxZoom) porque no tiene tiles
 // nativos más allá: maxZoom haría que Leaflet deje de dibujar el layer
 // por completo pasado ese nivel (tileZoom queda undefined en
@@ -34,9 +38,9 @@ const hillshade = L.tileLayer(
   'https://server.arcgisonline.com/ArcGIS/rest/services/Elevation/World_Hillshade/MapServer/tile/{z}/{y}/{x}',
   { attribution: 'Esri, USGS, NOAA', maxNativeZoom: 13 }
 );
-cartoLight.addTo(map); // default
+grayLight.addTo(map); // default
 L.control.layers(
-  { 'Wikimedia': cartoLight, 'OSM': osmLight, 'Hillshade': hillshade },
+  { 'Gris claro': grayLight, 'Gris oscuro': grayDark, 'OSM': osmLight, 'Hillshade': hillshade },
   undefined,
   { position: 'topright' }
 ).addTo(map);
