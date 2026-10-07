@@ -4,7 +4,7 @@
 # remoto — solo produce las imágenes que ese compose consume vía "image:".
 #
 # Uso:
-#   PUBLIC_API_URL=https://map.meshcore.example.com ./infra/deploy.sh
+#   PUBLIC_API_URL=https://meshcore-bga.sidis-ingenieria.com ./infra/deploy.sh
 #
 # Variables:
 #   REGISTRY        default: ghcr.io
