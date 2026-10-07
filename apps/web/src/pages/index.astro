@@ -32,6 +32,7 @@ import '../styles/global.css';
       <a href="/reportar" class="btn-primary" id="nav-report" hidden>Reportar conectividad</a>
       <a href="/admin" id="nav-admin" hidden>Admin</a>
       <a href="/decoder" id="nav-decoder">Decoder TV</a>
+      <button id="btn-clima" type="button">Clima</button>
       <button id="btn-enable-test" hidden>Activar modo prueba</button>
       <button id="btn-clear-test" hidden>Limpiar pruebas</button>
       <a href="/login" id="nav-login">Ingresar</a>
@@ -119,6 +120,18 @@ import '../styles/global.css';
     <span class="brand-overlay-text"><strong>Mesh</strong>Core</span>
   </div>
 
+  <dialog id="clima-modal" class="clima-modal" aria-labelledby="clima-title">
+    <h2 id="clima-title">Clima en tu ubicación</h2>
+    <button id="btn-fetch" type="submit">Obtener clima y generar mensaje</button>
+    <div id="status" role="status" aria-live="polite" class="clima-status"></div>
+    <div id="output" hidden>
+      <pre id="preview" class="clima-preview"></pre>
+      <button id="btn-copy" type="button" class="btn-secondary">📋 Copiar mensaje</button>
+    </div>
+    <button id="btn-clima-close" type="button" class="btn-secondary">Cerrar</button>
+  </dialog>
+
   <script src="../lib/mapPage.ts"></script>
+  <script src="../lib/climaPage.ts"></script>
 </body>
 </html>

@@ -782,3 +782,24 @@ th.sortable:hover { color: var(--text); }
      plus_code ya identifica la celda de forma más legible/tipeable. */
   #cells-table .col-h3 { display: none; }
 }
+
+/* ============ modal de clima ============ */
+.clima-modal {
+  width: min(92vw, 380px);
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border-bright);
+  border-radius: 6px;
+  padding: 1.2rem;
+}
+.clima-modal::backdrop { background: rgba(0, 0, 0, 0.6); }
+.clima-modal h2 {
+  margin: 0 0 1rem;
+  font-family: var(--font-display);
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.clima-modal .btn-secondary { width: 100%; margin-top: 0.6rem; }
+.clima-status { margin-top: 0.5rem; font-size: 0.8rem; color: var(--text-dim); }
+.clima-preview { white-space: pre-line; font: inherit; margin: 1rem 0 0; }

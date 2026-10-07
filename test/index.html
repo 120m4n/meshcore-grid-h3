@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Notificador de Clima</title>
+  <style>
+    :root {
+      --primary: #2563eb;
+      --bg: #f8fafc;
+      --card: #ffffff;
+      --text: #0f172a;
+    }
+
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      display: grid;
+      place-items: center;
+      min-height: 100vh;
+      margin: 0;
+      padding: 1rem;
+    }
+
+    .card {
+      background: var(--card);
+      padding: 2rem;
+      border-radius: 1rem;
+      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+      max-width: 420px;
+      width: 100%;
+    }
+
+    button {
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 0.75rem 1.25rem;
+      border-radius: 0.5rem;
+      font-weight: 600;
+      cursor: pointer;
+      width: 100%;
+      margin-top: 1rem;
+      transition: background 0.2s;
+    }
+
+    button:hover { background: #1d4ed8; }
+    button:disabled { background: #94a3b8; cursor: not-allowed; }
+
+    .message-box {
+      background: #f1f5f9;
+      padding: 1rem;
+      border-radius: 0.5rem;
+      margin-top: 1rem;
+      font-size: 0.95rem;
+      line-height: 1.4;
+      white-space: pre-line;
+    }
+
+    .status {
+      font-size: 0.875rem;
+      color: #64748b;
+      margin-top: 0.5rem;
+    }
+  </style>
+</head>
+<body>
+
+<div class="card">
+  <h2>Clima en tu ubicación</h2>
+  <button id="btnFetch">Obtener clima y generar mensaje</button>
+  
+  <div id="status" class="status"></div>
+  
+  <div id="output" style="display: none;">
+    <div id="msgPreview" class="message-box"></div>
+    <button id="btnCopy">📋 Copiar mensaje al portapapeles</button>
+  </div>
+</div>
+
+<script>
+  const btnFetch = document.getElementById('btnFetch');
+  const btnCopy = document.getElementById('btnCopy');
+  const statusDiv = document.getElementById('status');
+  const outputDiv = document.getElementById('output');
+  const msgPreview = document.getElementById('msgPreview');
+
+  let currentMessage = "";
+
+  // Diccionario básico de códigos de clima WMO (usados por Open-Meteo)
+  function decodeWMO(code) {
+    if (code === 0) return "Cielo despejado ☀️";
+    if (code >= 1 && code <= 3) return "Parcialmente nublado ⛅";
+    if (code >= 45 && code <= 48) return "Neblina 🌫️";
+    if (code >= 51 && code <= 67) return "Lluvia / Llovizna 🌧️";
+    if (code >= 71 && code <= 77) return "Nieve ❄️";
+    if (code >= 95) return "Tormenta eléctrica 🌩️";
+    return "Tiempo variable 🌡️";
+  }
+
+  // 1. Obtener ubicación con la Geolocation API
+  btnFetch.addEventListener('click', () => {
+    statusDiv.textContent = "Solicitando ubicación...";
+    btnFetch.disabled = true;
+
+    if (!navigator.geolocation) {
+      statusDiv.textContent = "Tu navegador no soporta Geolocation API.";
+      btnFetch.disabled = false;
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(async (position) => {
+      const lat = position.coords.latitude;
+      const lon = position.coords.longitude;
+      
+      statusDiv.textContent = "Consultando datos del clima...";
+      await fetchWeatherData(lat, lon);
+      btnFetch.disabled = false;
+    }, (error) => {
+      statusDiv.textContent = `Error al obtener ubicación: ${error.message}`;
+      btnFetch.disabled = false;
+    });
+  });
+
+  // 2. Fetch a la API libre de Open-Meteo (Sin API key / Sin Backend)
+  async function fetchWeatherData(lat, lon) {
+    try {
+      const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true`;
+      const response = await fetch(url);
+      
+      if (!response.ok) throw new Error("Error en la respuesta de la API");
+      
+      const data = await response.json();
+      const temp = Math.round(data.current_weather.temperature);
+      const condition = decodeWMO(data.current_weather.weathercode);
+
+      // Generar plantilla de mensaje predeterminado
+      currentMessage = `📍 Coordenadas: ${lat.toFixed(2)}, ${lon.toFixed(2)}\n🌡️ Temperatura: ${temp}°C\n🌤️ Estado: ${condition}\n¡Que tengas un gran día!`;
+
+      msgPreview.textContent = currentMessage;
+      outputDiv.style.display = "block";
+      statusDiv.textContent = "¡Datos actualizados!";
+    } catch (err) {
+      statusDiv.textContent = `Error al obtener el clima: ${err.message}`;
+    }
+  }
+
+  // 3. Copiar al portapapeles con Clipboard API
+  btnCopy.addEventListener('click', async () => {
+    if (!currentMessage) return;
+
+    try {
+      await navigator.clipboard.writeText(currentMessage);
+      const originalText = btnCopy.textContent;
+      btnCopy.textContent = "✅ ¡Copiado con éxito!";
+      setTimeout(() => { btnCopy.textContent = originalText; }, 2000);
+    } catch (err) {
+      statusDiv.textContent = "No se pudo copiar al portapapeles.";
+    }
+  });
+</script>
+
+</body>
+</html>
