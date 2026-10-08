@@ -1,4 +1,6 @@
-FROM node:20-slim AS build
+# El build produce estáticos (dist/) independientes de la arquitectura: se
+# corre en la del host, sin emular amd64 (esbuild crashea bajo QEMU).
+FROM --platform=$BUILDPLATFORM node:20-slim AS build
 WORKDIR /src
 COPY package.json ./
 RUN npm install
