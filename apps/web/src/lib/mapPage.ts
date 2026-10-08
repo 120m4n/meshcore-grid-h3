@@ -12,6 +12,12 @@ import {
 } from './map/radialSimulation.ts';
 import { activateRuler, activateArc, clearAllMeasurements } from './map/measureTools.ts';
 
+// Hash del commit, horneado en build (deploy.sh -> PUBLIC_APP_VERSION).
+// Visible en DevTools: `APP_VERSION` en la consola, y en el log al cargar.
+const APP_VERSION: string = import.meta.env.PUBLIC_APP_VERSION || 'dev';
+(window as unknown as { APP_VERSION: string }).APP_VERSION = APP_VERSION;
+console.info(`MeshCore Santander — versión ${APP_VERSION}`);
+
 const token = localStorage.getItem('token');
 // admin siempre tiene modo prueba; un usuario normal lo desbloquea
 // aceptando geolocalización (ver btn-enable-test más abajo).

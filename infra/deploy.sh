@@ -46,6 +46,7 @@ echo "==> web: ${WEB_IMAGE}:${COMMIT_SHA} (+ :latest) — PUBLIC_API_URL=${PUBLI
 docker build \
   --platform linux/amd64 \
   --build-arg PUBLIC_API_URL="${PUBLIC_API_URL}" \
+  --build-arg PUBLIC_APP_VERSION="${COMMIT_SHA}" \
   -t "${WEB_IMAGE}:${COMMIT_SHA}" -t "${WEB_IMAGE}:latest" \
   ./apps/web
 
