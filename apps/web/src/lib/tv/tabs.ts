@@ -1,4 +1,4 @@
-// Copia de MeshCore (120m4n/MeshCore-HJ7RMN @ 373afbac), tools/tv_edge_ext/tabs.ts.
+// Copia de MeshCore (120m4n/MeshCore-HJ7RMN @ 5824e828), tools/tv_edge_ext/tabs.ts.
 // Diferencias: import del decoder desde ./decoder.ts (extensión explícita para poder correr check.mjs en Node).
 // Resincronizar copiando de ahí y reaplicando las diferencias indicadas.
 // tabs.ts -- parseo de las líneas pegadas: una pestaña por línea válida (pura, sin DOM).
@@ -10,9 +10,9 @@ export const MAX_TABS = 6;
 export interface Tab { line: number; kind: string; samples: TvSample[] } // line = nº de línea (1-based)
 
 // Una línea = una página. Tolera prefijos tipo "-> ": toma el token más largo
-// del alfabeto del vector (base64url + "." y "~").
+// del alfabeto del vector (base64url + "." y "!").
 const vectorOf = (line: string) =>
-  (line.match(/[A-Za-z0-9_.~-]+/g) ?? []).reduce((a, b) => (b.length > a.length ? b : a), "");
+  (line.match(/[A-Za-z0-9_.!~-]+/g) ?? []).reduce((a, b) => (b.length > a.length ? b : a), "");
 
 // Pestaña «Todas»: junta las líneas del mismo sensor, ordenadas por epoch y sin duplicados
 // (las páginas tv 0 / tv N pueden solaparse). null si hay <2 pestañas o sensores mezclados.

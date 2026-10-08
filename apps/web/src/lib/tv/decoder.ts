@@ -1,4 +1,4 @@
-// Copia de MeshCore (120m4n/MeshCore-HJ7RMN @ 373afbac), tools/tv_decoder/tv_decoder.ts.
+// Copia de MeshCore (120m4n/MeshCore-HJ7RMN @ 5824e828), tools/tv_decoder/tv_decoder.ts.
 // Diferencias: sin main()/CLI y V0_HINT sin el comando git.
 // Resincronizar copiando de ahí y reaplicando las diferencias indicadas.
 // tv_decoder.ts -- decodifica vectores v1 del comando `tv <since>` de
@@ -67,7 +67,7 @@ export function decodeVector(s: string): { kind: string; samples: TvSample[] } {
       slot += take(1);
       continue;
     }
-    if (c === "~") {
+    if (c === "~" || c === "!") {
       pos++;
       t = unzigzag(take(2));
       h = take(2);

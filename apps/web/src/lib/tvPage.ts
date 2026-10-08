@@ -1,5 +1,5 @@
 // tvPage.ts -- página pública /decoder: una pestaña por línea válida. Port de tools/tv_edge_ext/popup.ts
-// (MeshCore @ 373afbac); diferencias: imports desde ./tv/ y clave de preferencias propia.
+// (MeshCore @ 5824e828); diferencias: imports desde ./tv/ y clave de preferencias propia.
 import { MAX_TABS, mergeTabs, parseLines, type Tab } from "./tv/tabs";
 import { renderCharts } from "./tv/chart";
 

@@ -25,4 +25,8 @@ eq(parseLines(txt, 2).skipped, 1, "límite de tabs");
 const t20 = parseLines(BMP20).tabs[0], t1 = parseLines(BMP1).tabs[0];
 eq(mergeTabs([t20, t20]).samples.length, 20, "mergeTabs dedup");
 eq([mergeTabs([t20, t1]).samples.length, mergeTabs([t20]), mergeTabs([t20, parseLines(BME5).tabs[0]])], [21, null, null], "mergeTabs reglas");
+// Marcador de resync "!" (MeshCore >= v1.4.5; antes "~"): ambos deben decodificar igual.
+const BMP_BANG = "GAwBx4-2H4BkDAAADBBABACAFAGBDAAACAAALACABCFAFCAAIAKCQAWAUAEASBIAEARBGBAAeEPBHABBLAJAAAFAACaGQEICAAHAFV!IwA2jC";
+eq(decodeVector(BMP_BANG).samples.length, 48, "vector con !");
+eq(decodeVector(BMP_BANG), decodeVector(BMP_BANG.replace("!", "~")), "! == ~");
 console.log("ok: decoder, chart y tabs");
