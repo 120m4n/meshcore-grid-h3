@@ -2,6 +2,7 @@
 // (MeshCore @ 5824e828); diferencias: imports desde ./tv/ y clave de preferencias propia.
 import { MAX_TABS, mergeTabs, parseLines, type Tab } from "./tv/tabs";
 import { renderCharts } from "./tv/chart";
+import { showToast } from "./toast";
 
 const BMP_OFFSET_HPA = 800;
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
@@ -114,6 +115,49 @@ $("tabs").addEventListener("keydown", (e) => {
   const d = { ArrowRight: 1, ArrowLeft: -1 }[(e as KeyboardEvent).key];
   if (d) select((active + d + tabs.length) % tabs.length, true);
 });
+// Filas de la tabla: click mueve el marcador de las gráficas (si están on); pulsación larga copia hora local, T y P/%RH.
+// chart.ts es una copia sincronizada (no se edita), así que se le simula el pointermove sobre el SVG.
+const LONG_PRESS_MS = 600, CH_W = 540, CH_L = 46, CH_R = 14; // CH_* = W/L/R de chart.ts
+let pressTimer = 0, longPressed = false;
+const rowIdx = (e: Event) => {
+  const tr = (e.target as HTMLElement).closest("tr");
+  return tr && tr.parentElement === $("tbl").tBodies[0] ? tr.sectionRowIndex : -1;
+};
+const cancelPress = () => clearTimeout(pressTimer);
+
+function moveMarker(i: number) {
+  const svg = $("charts").querySelector("svg");
+  const s = tabs[active]?.samples;
+  if (!showCharts || !svg || !s || s.length < 2) return;
+  let x0 = s[0].epochMin, x1 = s[s.length - 1].epochMin;
+  if (x0 === x1) { x0 -= 30; x1 += 30; }
+  const r = svg.getBoundingClientRect();
+  const x = CH_L + ((s[i].epochMin - x0) / (x1 - x0)) * (CH_W - CH_L - CH_R);
+  svg.dispatchEvent(new PointerEvent("pointermove", { clientX: r.left + (x * r.width) / CH_W, clientY: r.top }));
+}
+
+const tbody = $("tbl").tBodies[0];
+tbody.addEventListener("pointerdown", (e) => {
+  const i = rowIdx(e);
+  longPressed = false;
+  if (i < 0) return;
+  pressTimer = window.setTimeout(() => {
+    longPressed = true;
+    const r = rows[i], t = tabs[active].samples[i].date.toLocaleString("sv-SE");
+    navigator.clipboard.writeText(`${t}\n${header[1]}: ${r[1]}\n${header[2]}: ${r[2]}`).then(
+      () => showToast("Copiado: hora local, temperatura y " + (header[2] ?? "")),
+      () => showToast("No se pudo copiar al portapapeles", "error"),
+    );
+  }, LONG_PRESS_MS);
+});
+for (const ev of ["pointerup", "pointercancel", "pointerleave"]) tbody.addEventListener(ev, cancelPress);
+tbody.addEventListener("click", (e) => {
+  const i = rowIdx(e);
+  if (i >= 0 && !longPressed) moveMarker(i);
+  longPressed = false;
+});
+tbody.addEventListener("contextmenu", (e) => e.preventDefault()); // menú nativo de pulsación larga en móvil
+
 $("go").addEventListener("click", decode);
 $("toggle").addEventListener("click", () => {
   showCharts = !showCharts;
