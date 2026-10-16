@@ -814,3 +814,6 @@ th.sortable:hover { color: var(--text); }
   color: #fff; -webkit-text-stroke: 3px rgba(20, 28, 40, 0.85); paint-order: stroke fill;
 }
 .rp-label span:last-child { font: 600 11px/1.15 var(--font-display); color: var(--accent); }
+
+/* Evita menú/selección nativa de iOS durante la pulsación larga (map/tempPoint.ts) */
+#map { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }

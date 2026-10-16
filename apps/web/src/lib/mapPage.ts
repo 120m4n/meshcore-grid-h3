@@ -1,5 +1,7 @@
 import { loadCells } from './map/realCells.ts';
 import { loadRepeaters } from './map/repeaters.ts';
+import { initTempPoints } from './map/tempPoint.ts';
+import { toggleUserLocation, onUserLocationState } from './map/geolocation.ts';
 import { initTestMode, toggleTestMode } from './map/testCells.ts';
 import { initCoordSearch } from './map/coordSearch.ts';
 import { isTestModeEnabled } from './map/state.ts';
@@ -28,8 +30,9 @@ initTestMode(isAdmin);
 initCoordSearch();
 
 document.addEventListener('mc-tool-toggle', (e: Event) => {
-  const { tool } = (e as CustomEvent<{ tool: 'ruler' | 'arc' | 'eraser' }>).detail;
-  if (tool === 'ruler') activateRuler();
+  const { tool } = (e as CustomEvent<{ tool: 'ruler' | 'arc' | 'eraser' | 'locate' }>).detail;
+  if (tool === 'locate') toggleUserLocation();
+  else if (tool === 'ruler') activateRuler();
   else if (tool === 'arc') activateArc();
   else clearAllMeasurements();
 });
@@ -51,6 +54,12 @@ if (!isAdmin) {
 
 loadCells(isAdmin);
 loadRepeaters();
+initTempPoints();
+// La ubicación solo se pide al pulsar 📍 (el botón vive en el shadow DOM del toolbar).
+onUserLocationState((on) => {
+  const btn = document.querySelector('mc-map-toolbar')?.shadowRoot?.querySelector('mc-tool-button[tool="locate"]');
+  if (btn) (btn as unknown as { active: boolean }).active = on;
+});
 
 // Mostrar/ocultar nav según sesión
 if (token) {

@@ -11,6 +11,7 @@ import { getLastKnownPosition } from './geolocation.ts';
 import { copyReportMessage } from './reportMessage.ts';
 import { isPickingOrigin, pickOriginAt } from './radialSimulation.ts';
 import { isMeasuring, handleMeasureClick } from './measureTools.ts';
+import { handleShiftClick } from './tempPoint.ts';
 
 const CELLS_LAST_FETCH_KEY = 'meshcore:cells-last-fetch';
 
@@ -52,6 +53,11 @@ export async function loadCells(isAdmin: boolean) {
       // creador/eliminador de celdas de prueba del mapa
       polygon.on('click', (e) => {
         L.DomEvent.stopPropagation(e);
+
+        if (handleShiftClick(e)) {
+          polygon.closePopup();
+          return;
+        }
 
         if (isMeasuring()) {
           polygon.closePopup();

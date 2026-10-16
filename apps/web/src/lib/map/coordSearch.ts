@@ -2,7 +2,7 @@ import L from 'leaflet';
 import { showToast } from '../toast.ts';
 import { SANTANDER_BOUNDS } from '../mapBounds.ts';
 import { map } from './setup.ts';
-import { snapToRepeater } from './measureTools.ts';
+import { setTempPoint } from './tempPoint.ts';
 
 // Mismo formato que LAT_LON_PASTE en reportPage.ts:85 — un solo par
 // "lat,lon" separado por coma, sin soportar Plus Codes ni direcciones.
@@ -12,8 +12,6 @@ const LAT_LON_FORMAT = /^(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)$/;
 // (testCells.ts) para consistencia visual entre "ir a mi ubicación" e
 // "ir a estas coordenadas".
 const TARGET_ZOOM = 16;
-
-let searchMarker: L.CircleMarker | null = null;
 
 // Incrementado en cada búsqueda válida — el callback de moveend de una
 // búsqueda vieja se descarta si para cuando corre ya hay una más nueva
@@ -40,19 +38,7 @@ function goToCoords(rawText: string) {
   map.flyTo([lat, lon], TARGET_ZOOM);
   map.once('moveend', () => {
     if (token !== searchToken) return; // una búsqueda más nueva ya interrumpió esta animación
-    if (searchMarker) {
-      map.removeLayer(searchMarker);
-    }
-    // Con el zoom final ya aplicado, un punto a pocos px de una repetidora
-    // visible se ajusta a sus coordenadas exactas.
-    const at = snapToRepeater(L.latLng(lat, lon)) ?? L.latLng(lat, lon);
-    searchMarker = L.circleMarker(at, {
-      radius: 7,
-      color: '#ffffff',
-      weight: 2,
-      fillColor: '#e67e22',
-      fillOpacity: 0.9,
-    }).addTo(map);
+    setTempPoint(L.latLng(lat, lon)); // se ajusta a una repetidora cercana
   });
 }
 

@@ -9,12 +9,13 @@ import { realIndexes, isTestModeEnabled, setTestModeEnabled } from './state.ts';
 import {
   getCurrentGeoPosition,
   getLastKnownPosition,
-  renderUserLocation,
   startLiveUserLocation,
+  startUserLocationDisplay,
 } from './geolocation.ts';
 import { copyReportMessage } from './reportMessage.ts';
 import { isPickingOrigin, pickOriginAt } from './radialSimulation.ts';
 import { isMeasuring, handleMeasureClick } from './measureTools.ts';
+import { handleShiftClick } from './tempPoint.ts';
 
 // ============ celdas de prueba (mock, solo localStorage) ============
 // No toca el backend ni cell_agg real. Sirve para probar la interacción
@@ -63,6 +64,10 @@ function renderTestCell(cell: TestCell) {
   `);
   polygon.on('click', (e) => {
     L.DomEvent.stopPropagation(e);
+    if (handleShiftClick(e)) {
+      polygon.closePopup();
+      return;
+    }
     if (isMeasuring()) {
       polygon.closePopup();
       handleMeasureClick(e.latlng.lat, e.latlng.lng);
@@ -120,6 +125,7 @@ let hasStartedLiveWatch = false;
 // plus code copiado siempre sale de esa posición GPS, nunca del punto
 // exacto donde cayó el click.
 async function handleMapClick(e: L.LeafletMouseEvent) {
+  if (e.originalEvent.shiftKey) return; // shift+click = punto temporal (tempPoint.ts)
   if (isMeasuring()) return; // measureTools.ts ya procesó este clic vía su propio map.on('click')
   if (!isTestModeEnabled()) return;
   const h3Index = latLngToCell(e.latlng.lat, e.latlng.lng, H3_RESOLUTION);
@@ -189,9 +195,9 @@ export async function toggleTestMode(): Promise<void> {
       return;
     }
     hasStartedLiveWatch = true;
-    renderUserLocation(firstPos);
     map.setView([firstPos.coords.latitude, firstPos.coords.longitude], Math.min(16, MAX_ZOOM));
-    startLiveUserLocation((err) => {
+    startUserLocationDisplay(false); // el setView de arriba ya centró
+    startLiveUserLocation(() => {}, (err) => {
       if (err.code === err.PERMISSION_DENIED) {
         showToast('Se perdió el acceso a tu ubicación GPS', 'error');
       }

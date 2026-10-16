@@ -44,6 +44,24 @@ mapa el watch queda corriendo indefinidamente una vez arrancado (nunca
 lo detiene el toggle); en `/reportar` sí se detiene al cambiar de
 método, al enviar el reporte, o si el usuario edita lat/lon a mano.
 
+### Punto de ubicación con botón 📍 y Kalman
+
+El botón 📍 del toolbar (`toggleUserLocation` en `map/geolocation.ts`) es
+el único que pide la ubicación — nunca al cargar la página —, sin
+depender del modo prueba (que, al activarse, también la enciende). Dibuja el punto + círculo de error (`accuracy` filtrado, en metros) con
+`lib/kalman.ts`. Va por su propio `watchPosition` (sin el tope de 50 m de
+`geoWatch.ts`); el watch de `geoWatch.ts` sigue siendo el único que valida
+presencia para reportar. El punto es imán (`snapToMeasureTarget`) de ruler
+y compass, junto con las repetidoras. Chequeo: `node
+--experimental-strip-types src/lib/kalmanCheck.mjs`.
+
+### Punto temporal compartido (`map/tempPoint.ts`)
+
+`tempPointsLayer` guarda un único punto, alimentado por «Ir a coordenadas»,
+pulsación larga (500 ms, touch events propios) y shift+click; se ajusta a
+una repetidora cercana. Los polígonos de celdas detienen la propagación del
+click, por eso llaman a `handleShiftClick` ellos mismos.
+
 ### "Activar modo prueba" es un toggle que no toca el GPS
 
 El botón (no-admin) alterna únicamente si el click sobre el mapa

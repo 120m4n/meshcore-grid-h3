@@ -57,6 +57,7 @@ if ('serviceWorker' in navigator) {
 map.setMaxBounds(SANTANDER_BOUNDS);
 
 export const cellLayer = L.layerGroup().addTo(map);
+export const tempPointsLayer = L.layerGroup().addTo(map);
 export const testLayer = L.layerGroup().addTo(map);
 export const originsLayer = L.layerGroup().addTo(map);
 export const userLocationLayer = L.layerGroup().addTo(map);

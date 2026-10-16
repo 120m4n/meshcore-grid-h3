@@ -17,6 +17,7 @@ export class McMapToolbar extends HTMLElement {
       <mc-tool-button tool="ruler"></mc-tool-button>
       <mc-tool-button tool="arc"></mc-tool-button>
       <mc-tool-button tool="eraser"></mc-tool-button>
+      <mc-tool-button tool="locate"></mc-tool-button>
     `;
   }
 }

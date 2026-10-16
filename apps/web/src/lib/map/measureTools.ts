@@ -1,5 +1,6 @@
 import L from 'leaflet';
-import { map, rulerLayer, arcLayer, repeatersLayer } from './setup.ts';
+import { map, rulerLayer, arcLayer, repeatersLayer, tempPointsLayer } from './setup.ts';
+import { getSmoothedLatLng } from './geolocation.ts';
 import { cancelOriginPicking, formatDistance } from './radialSimulation.ts';
 
 export type MeasureTool = 'ruler' | 'arc';
@@ -23,6 +24,22 @@ let snapRing: L.CircleMarker | null = null;
 // Radio de imán en píxeles: independiente del zoom, así el efecto se
 // siente igual de cerca o de lejos.
 const SNAP_PX = 24;
+
+// Imanes de las herramientas de medición: repetidoras, punto de
+// ubicación y punto temporal. Gana el más cercano dentro de SNAP_PX.
+function snapToMeasureTarget(p: L.LatLng): L.LatLng | null {
+  const temp = (tempPointsLayer.getLayers()[0] as L.CircleMarker | undefined)?.getLatLng();
+  const cands = [snapToRepeater(p), getSmoothedLatLng(), temp ?? null];
+  const pp = map.latLngToContainerPoint(p);
+  let best: L.LatLng | null = null;
+  let bestD = SNAP_PX;
+  for (const c of cands) {
+    if (!c) continue;
+    const d = pp.distanceTo(map.latLngToContainerPoint(c));
+    if (d <= bestD) { bestD = d; best = c; }
+  }
+  return best;
+}
 
 // Repetidora visible más cercana al punto (dentro de SNAP_PX), o null.
 // Las agrupadas en un cluster no cuentan: no se ven, no se imantan.
@@ -140,7 +157,11 @@ export function clearAllMeasurements(): void {
 }
 
 function syncToolButtons(): void {
-  document.querySelectorAll('mc-tool-button').forEach((el) => {
+  // Los botones viven en el shadow DOM de <mc-map-toolbar>: un
+  // document.querySelectorAll no los alcanza.
+  const toolbar = document.querySelector('mc-map-toolbar');
+  toolbar?.shadowRoot?.querySelectorAll('mc-tool-button').forEach((el) => {
+    if (el.tool === 'locate') return; // su estado lo maneja geolocation.ts
     el.active = el.tool === activeTool;
   });
 }
@@ -188,7 +209,7 @@ function drawArc(a: L.LatLng, b: L.LatLng): void {
 export function handleMeasureClick(lat: number, lon: number): void {
   if (activeTool === null) return;
   const raw = L.latLng(lat, lon);
-  const point = snapToRepeater(raw) ?? raw;
+  const point = snapToMeasureTarget(raw) ?? raw;
   if (pendingPointA === null) {
     pendingPointA = point;
     showPointAMarker(point);
@@ -205,7 +226,7 @@ map.on('click', (e: L.LeafletMouseEvent) => {
 
 map.on('mousemove', (e: L.LeafletMouseEvent) => {
   if (activeTool === null || pendingPointA === null) return;
-  const snapped = snapToRepeater(e.latlng);
+  const snapped = snapToMeasureTarget(e.latlng);
   showSnapRing(snapped);
   updatePreviewLine(pendingPointA, snapped ?? e.latlng);
 });

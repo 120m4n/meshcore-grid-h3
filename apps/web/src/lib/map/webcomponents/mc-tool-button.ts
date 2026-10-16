@@ -2,12 +2,14 @@ const ICONS: Record<string, string> = {
   ruler: '📏',
   arc: '🧭',
   eraser: '🗑️',
+  locate: '📍',
 };
 
 const LABELS: Record<string, string> = {
   ruler: 'Regla — medir distancia',
   arc: 'Rumbo — medir ángulo desde el norte',
   eraser: 'Borrar — elimina todas las mediciones',
+  locate: 'Mi ubicación — activar/desactivar',
 };
 
 export class McToolButton extends HTMLElement {
@@ -66,9 +68,9 @@ export class McToolButton extends HTMLElement {
     this.render();
   }
 
-  get tool(): 'ruler' | 'arc' | 'eraser' {
+  get tool(): 'ruler' | 'arc' | 'eraser' | 'locate' {
     const value = this.getAttribute('tool');
-    return value === 'arc' || value === 'eraser' ? value : 'ruler';
+    return value === 'arc' || value === 'eraser' || value === 'locate' ? value : 'ruler';
   }
 
   get active(): boolean {
