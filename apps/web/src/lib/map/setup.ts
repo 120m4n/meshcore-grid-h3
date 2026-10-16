@@ -1,4 +1,7 @@
 import L from 'leaflet';
+import 'leaflet.markercluster';
+import 'leaflet.markercluster/dist/MarkerCluster.css';
+import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
 import { CENTER, SANTANDER_BOUNDS, MIN_ZOOM, MAX_ZOOM } from '../mapBounds.ts';
 import './webcomponents/mc-map-toolbar.ts';
 
@@ -39,9 +42,11 @@ const hillshade = L.tileLayer(
   { attribution: 'Esri, USGS, NOAA', maxNativeZoom: 13 }
 );
 grayLight.addTo(map); // default
+// Sin minZoom/maxZoom: visible a toda escala; al alejar se agrupa en clusters.
+export const repeatersLayer = L.markerClusterGroup({ maxClusterRadius: 50 }).addTo(map);
 L.control.layers(
   { 'Gris claro': grayLight, 'Gris oscuro': grayDark, 'OSM': osmLight, 'Hillshade': hillshade },
-  undefined,
+  { 'Repetidoras': repeatersLayer },
   { position: 'topright' }
 ).addTo(map);
 

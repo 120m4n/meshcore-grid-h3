@@ -101,3 +101,16 @@ gráficas se crea dinámicamente y los estilos con scope de Astro no le
 aplican; ahí se revierten reglas globales (`label` en columna, `input` de
 44px, `table`/`td` con borde).
 
+
+### Capa de repetidoras (`map/repeaters.ts`)
+
+Lee `/data/MeshAzimuth-repetidores.json` (array de `{name, hashPrefix,
+latitude, longitude, ...}`) una vez al cargar el mapa, lo valida
+(`map/repeatersParse.ts`, ítems inválidos se descartan con `console.warn`),
+lo convierte a GeoJSON `Point` y lo dibuja en un `markerClusterGroup`
+(`repeatersLayer` en `setup.ts`, sin límites de zoom, overlay
+«Repetidoras» en el control de capas). Si el archivo o la carpeta no
+existen, no pasa nada. En Docker, `infra/web-data/` se monta read-only en
+`/usr/share/nginx/html/data` (no usar `infra/data/`: ahí vive
+`meshcore.db`); en dev, `apps/web/public/data/`. Chequeo:
+`node --experimental-strip-types src/lib/map/repeatersCheck.mjs`.

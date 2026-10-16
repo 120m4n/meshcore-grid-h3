@@ -48,6 +48,10 @@ services:
       - "8081:80"
     depends_on:
       - api
+    volumes:
+      # JSON de capas externas (MeshAzimuth-repetidores.json). Carpeta
+      # distinta de ./data: esa contiene meshcore.db y no debe ser pública.
+      - ./web-data:/usr/share/nginx/html/data:ro
     environment:
       TZ: America/Bogota
 

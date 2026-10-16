@@ -803,3 +803,14 @@ th.sortable:hover { color: var(--text); }
 .clima-modal .btn-secondary { width: 100%; margin-top: 0.6rem; }
 .clima-status { margin-top: 0.5rem; font-size: 0.8rem; color: var(--text-dim); }
 .clima-preview { white-space: pre-line; font: inherit; margin: 1rem 0 0; }
+
+/* --- Capa de repetidoras (map/repeaters.ts) --- */
+.rp-icon { background: none; border: 0; }
+.rp-marker { position: relative; width: 40px; height: 52px; }
+.rp-label {
+  position: absolute; top: 52px; left: 50%; transform: translateX(-50%);
+  display: flex; flex-direction: column; align-items: center;
+  font: 700 12px/1.15 var(--font-body); white-space: nowrap; pointer-events: none;
+  color: #fff; -webkit-text-stroke: 3px rgba(20, 28, 40, 0.85); paint-order: stroke fill;
+}
+.rp-label span:last-child { font: 600 11px/1.15 var(--font-display); color: var(--accent); }

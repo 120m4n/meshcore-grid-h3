@@ -1,4 +1,5 @@
 import { loadCells } from './map/realCells.ts';
+import { loadRepeaters } from './map/repeaters.ts';
 import { initTestMode, toggleTestMode } from './map/testCells.ts';
 import { initCoordSearch } from './map/coordSearch.ts';
 import { isTestModeEnabled } from './map/state.ts';
@@ -49,6 +50,7 @@ if (!isAdmin) {
 }
 
 loadCells(isAdmin);
+loadRepeaters();
 
 // Mostrar/ocultar nav según sesión
 if (token) {

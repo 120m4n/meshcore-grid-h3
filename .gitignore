@@ -20,3 +20,5 @@ reportes_fallidos.txt
 infra/bulk/reportar_sin_cobertura.py
 apps/web/.astro/settings.json
 apps/web/.astro/settings.json
+infra/web-data/
+apps/web/public/data/

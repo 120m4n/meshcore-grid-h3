@@ -114,3 +114,9 @@ TS=$(date +%Y%m%d%H%M%S)
 sqlite3 /home/roman/meshcore/data/meshcore.db ".backup '$BACKUP_DIR/meshcore.db.bak-$TS'"
 
 cp data/meshcore.db data/meshcore.db.bak-$(date +%Y%m%d%H%M%S)
+## Capa de repetidoras (opcional)
+
+Colocar `MeshAzimuth-repetidores.json` en `infra/web-data/` (junto al
+compose); se monta en el contenedor `web` como `/data/` (solo lectura) y
+el mapa lo lee al cargar. Cambiar el archivo no requiere rebuild ni
+reinicio. Si no existe, el mapa funciona sin la capa.
