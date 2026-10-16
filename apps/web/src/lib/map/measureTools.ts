@@ -1,5 +1,5 @@
 import L from 'leaflet';
-import { map, rulerLayer, arcLayer } from './setup.ts';
+import { map, rulerLayer, arcLayer, repeatersLayer } from './setup.ts';
 import { cancelOriginPicking, formatDistance } from './radialSimulation.ts';
 
 export type MeasureTool = 'ruler' | 'arc';
@@ -18,6 +18,40 @@ let pendingPointA: L.LatLng | null = null;
 // medición ya arrancó hasta completar el segundo clic.
 let previewMarker: L.CircleMarker | null = null;
 let previewLine: L.Polyline | null = null;
+let snapRing: L.CircleMarker | null = null;
+
+// Radio de imán en píxeles: independiente del zoom, así el efecto se
+// siente igual de cerca o de lejos.
+const SNAP_PX = 24;
+
+// Repetidora visible más cercana al punto (dentro de SNAP_PX), o null.
+// Las agrupadas en un cluster no cuentan: no se ven, no se imantan.
+function snapToRepeater(p: L.LatLng): L.LatLng | null {
+  if (!map.hasLayer(repeatersLayer)) return null;
+  const pp = map.latLngToContainerPoint(p);
+  let best: L.LatLng | null = null;
+  let bestD = SNAP_PX;
+  for (const m of repeatersLayer.getLayers() as L.Marker[]) {
+    if (repeatersLayer.getVisibleParent(m) !== m) continue;
+    const ll = m.getLatLng();
+    const d = pp.distanceTo(map.latLngToContainerPoint(ll));
+    if (d <= bestD) { bestD = d; best = ll; }
+  }
+  return best;
+}
+
+function showSnapRing(at: L.LatLng | null): void {
+  const layer = activePreviewLayer();
+  if (!at || !layer) {
+    snapRing?.remove();
+    snapRing = null;
+    return;
+  }
+  if (snapRing) { snapRing.setLatLng(at); return; }
+  snapRing = L.circleMarker(at, {
+    radius: 14, color: '#fff', weight: 2, fill: false, interactive: false,
+  }).addTo(layer);
+}
 
 function activePreviewLayer(): L.LayerGroup | null {
   if (activeTool === 'ruler') return rulerLayer;
@@ -26,6 +60,7 @@ function activePreviewLayer(): L.LayerGroup | null {
 }
 
 function clearPreview(): void {
+  showSnapRing(null);
   previewMarker?.remove();
   previewMarker = null;
   previewLine?.remove();
@@ -152,7 +187,8 @@ function drawArc(a: L.LatLng, b: L.LatLng): void {
 
 export function handleMeasureClick(lat: number, lon: number): void {
   if (activeTool === null) return;
-  const point = L.latLng(lat, lon);
+  const raw = L.latLng(lat, lon);
+  const point = snapToRepeater(raw) ?? raw;
   if (pendingPointA === null) {
     pendingPointA = point;
     showPointAMarker(point);
@@ -169,7 +205,20 @@ map.on('click', (e: L.LeafletMouseEvent) => {
 
 map.on('mousemove', (e: L.LeafletMouseEvent) => {
   if (activeTool === null || pendingPointA === null) return;
-  updatePreviewLine(pendingPointA, e.latlng);
+  const snapped = snapToRepeater(e.latlng);
+  showSnapRing(snapped);
+  updatePreviewLine(pendingPointA, snapped ?? e.latlng);
+});
+
+// Un click sobre el pin de una repetidora no llega a map.on('click')
+// (Leaflet lo detiene en el marker): se mide desde acá, con las
+// coordenadas exactas de la repetidora, y sin abrir su popup.
+repeatersLayer.on('click', (e) => {
+  if (activeTool === null) return;
+  const m = e.layer as L.Marker;
+  m.closePopup();
+  const ll = m.getLatLng();
+  handleMeasureClick(ll.lat, ll.lng);
 });
 
 document.addEventListener('keydown', (e: KeyboardEvent) => {
