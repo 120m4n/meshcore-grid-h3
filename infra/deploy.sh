@@ -5,7 +5,7 @@
 #
 # Uso:
 #   PUBLIC_API_URL=https://meshcore-bga.sidis-ingenieria.com ./infra/deploy.sh
-#
+#   scp test/MeshAzimuth-repetidores.json USUARIO@HOST:RUTA_REMOTA/infra/web-data/
 # Variables:
 #   REGISTRY        default: ghcr.io
 #   IMAGE_OWNER     default: owner/org de "git remote origin" (GitHub)

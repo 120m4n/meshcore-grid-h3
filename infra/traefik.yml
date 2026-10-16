@@ -53,7 +53,10 @@ services:
       WEB_ORIGIN: "https://meshcore-bga.sidis-ingenieria.com"
       TZ: America/Bogota
     healthcheck:
-      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:8080/api/v1/cells || exit 1"]
+      # La imagen api es debian-slim: no trae wget ni curl, así que un
+      # healthcheck con wget siempre falla (unhealthy aunque la API
+      # responda). bash + /dev/tcp no necesita nada extra.
+      test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/8080; printf 'GET /health HTTP/1.0\\r\\n\\r\\n' >&3; head -n1 <&3 | grep -q ' 200 '"]
       interval: 30s
       timeout: 5s
       retries: 3
