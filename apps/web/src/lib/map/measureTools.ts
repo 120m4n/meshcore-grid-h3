@@ -26,7 +26,7 @@ const SNAP_PX = 24;
 
 // Repetidora visible más cercana al punto (dentro de SNAP_PX), o null.
 // Las agrupadas en un cluster no cuentan: no se ven, no se imantan.
-function snapToRepeater(p: L.LatLng): L.LatLng | null {
+export function snapToRepeater(p: L.LatLng): L.LatLng | null {
   if (!map.hasLayer(repeatersLayer)) return null;
   const pp = map.latLngToContainerPoint(p);
   let best: L.LatLng | null = null;

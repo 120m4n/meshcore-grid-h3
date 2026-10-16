@@ -2,6 +2,7 @@ import L from 'leaflet';
 import { showToast } from '../toast.ts';
 import { SANTANDER_BOUNDS } from '../mapBounds.ts';
 import { map } from './setup.ts';
+import { snapToRepeater } from './measureTools.ts';
 
 // Mismo formato que LAT_LON_PASTE en reportPage.ts:85 — un solo par
 // "lat,lon" separado por coma, sin soportar Plus Codes ni direcciones.
@@ -42,7 +43,10 @@ function goToCoords(rawText: string) {
     if (searchMarker) {
       map.removeLayer(searchMarker);
     }
-    searchMarker = L.circleMarker([lat, lon], {
+    // Con el zoom final ya aplicado, un punto a pocos px de una repetidora
+    // visible se ajusta a sus coordenadas exactas.
+    const at = snapToRepeater(L.latLng(lat, lon)) ?? L.latLng(lat, lon);
+    searchMarker = L.circleMarker(at, {
       radius: 7,
       color: '#ffffff',
       weight: 2,
