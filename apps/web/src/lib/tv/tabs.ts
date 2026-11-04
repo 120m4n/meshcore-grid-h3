@@ -7,7 +7,7 @@ import type { TvSample } from "./decoder.ts";
 
 export const MAX_TABS = 6;
 
-export interface Tab { line: number; kind: string; samples: TvSample[] } // line = nº de línea (1-based)
+export interface Tab { line: number; kind: string; version: number; samples: TvSample[] } // line = nº de línea (1-based)
 
 // Una línea = una página. Tolera prefijos tipo "-> ": toma el token más largo
 // del alfabeto del vector (base64url + "." y "!").
@@ -17,10 +17,10 @@ const vectorOf = (line: string) =>
 // Pestaña «Todas»: junta las líneas del mismo sensor, ordenadas por epoch y sin duplicados
 // (las páginas tv 0 / tv N pueden solaparse). null si hay <2 pestañas o sensores mezclados.
 export function mergeTabs(tabs: Tab[]): Tab | null {
-  if (tabs.length < 2 || tabs.some((t) => t.kind !== tabs[0].kind)) return null;
+  if (tabs.length < 2 || tabs.some((t) => t.kind !== tabs[0].kind || t.version !== tabs[0].version)) return null;
   const byEpoch = new Map<number, TvSample>();
   for (const t of tabs) for (const s of t.samples) byEpoch.set(s.epochMin, s);
-  return { line: 0, kind: tabs[0].kind, samples: [...byEpoch.values()].sort((a, b) => a.epochMin - b.epochMin) };
+  return { line: 0, kind: tabs[0].kind, version: tabs[0].version, samples: [...byEpoch.values()].sort((a, b) => a.epochMin - b.epochMin) };
 }
 
 // Válida = decodifica y trae >=1 registro. Las vacías y "-" se ignoran; las que fallan van a errors;

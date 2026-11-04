@@ -100,7 +100,7 @@ OSM estándar) deba cambiar a satélite salvo que se pida explícitamente.
 
 `src/pages/decoder.astro` + `src/lib/tvPage.ts` decodifican en el
 navegador la salida del comando `tv 0` / `tv <since>` de un repeater
-MeshCore (vectores v1 base64url): una pestaña por línea válida (máx. 6),
+MeshCore (vectores v3 base64url; v1 se acepta con aviso de deprecado): una pestaña por línea válida (máx. 6),
 pestaña «Todas» que junta las del mismo sensor, tabla, gráficas SVG con
 promedio y mín/máx, y copia de CSV / siguiente consulta. Es pública:
 no importa `api.ts`, no lee `token` ni llama a la API, y su enlace
@@ -113,7 +113,12 @@ guardan en `localStorage` bajo `meshcore-web.tv-decoder.prefs`.
 (120m4n/MeshCore-HJ7RMN); cada archivo indica en su cabecera el commit de
 origen y las diferencias. No se editan aquí: para actualizarlos, copiar de
 MeshCore y reaplicar esas diferencias. `node src/lib/tv/check.mjs` valida la
-copia (decoder, tabs, chart). Los estilos de la página viven en un
+copia (decoder, tabs, chart). El alfabeto del vector está pensado para pegarse en
+Telegram/WhatsApp: `~` (tachado) ya no lo emite el firmware y aquí solo se
+acepta para vectores viejos. **Riesgo menor abierto:** `_` (de base64url) es
+cursiva en WhatsApp (`_texto_`); dentro de una palabra normalmente no se
+activa, por eso se dejó. Si aparecen cursivas, cambiarlo exige una nueva
+`FORMAT_VERSION` en MeshCore y actualizar esta copia. Los estilos de la página viven en un
 `<style is:global>` de `decoder.astro` bajo `.tv-page`, porque el SVG de las
 gráficas se crea dinámicamente y los estilos con scope de Astro no le
 aplican; ahí se revierten reglas globales (`label` en columna, `input` de

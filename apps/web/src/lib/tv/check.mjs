@@ -1,6 +1,6 @@
 // Chequeo de la copia de MeshCore: node apps/web/src/lib/tv/check.mjs
 // Los vectores de ejemplo son los mismos con los que se validó en tools/tv_edge_ext/check.mjs.
-import { decodeVector } from "./decoder.ts";
+import { decodeVector, hValue } from "./decoder.ts";
 import { extremes, mean, niceTicks, segments } from "./chart.ts";
 import { mergeTabs, parseLines } from "./tabs.ts";
 
@@ -29,4 +29,12 @@ eq([mergeTabs([t20, t1]).samples.length, mergeTabs([t20]), mergeTabs([t20, parse
 const BMP_BANG = "GAwBx4-2H4BkDAAADBBABACAFAGBDAAACAAALACABCFAFCAAIAKCQAWAUAEASBIAEARBGBAAeEPBHABBLAJAAAFAACaGQEICAAHAFV!IwA2jC";
 eq(decodeVector(BMP_BANG).samples.length, 48, "vector con !");
 eq(decodeVector(BMP_BANG), decodeVector(BMP_BANG.replace("!", "~")), "! == ~");
+// v3: mismo cuerpo, header N (BME280) / O (BMP280); H de BMP280 = h*2+545.
+const v3 = decodeVector("N" + BME5.slice(1)), v1 = decodeVector(BME5);
+eq([v3.version, v1.version, v3.samples], [3, 1, v1.samples], "v3 y v1 deprecado");
+eq([hValue("BMP280", 3, 230), hValue("BMP280", 1, 213), hValue("BME280", 3, 55)], [1005, 1013, 55], "hValue");
+const pv = parseLines(["O" + BMP20.slice(1), BMP20].join("\n"));
+eq([pv.tabs.map((t) => t.version), mergeTabs(pv.tabs)], [[3, 1], null], "no mezcla v1 con v3");
+let bad = null; try { decodeVector("J" + BME5.slice(1)); } catch (e) { bad = e.message; }
+eq(bad?.startsWith("header desconocido"), true, "v2 rechazada");
 console.log("ok: decoder, chart y tabs");

@@ -2,9 +2,9 @@
 // (MeshCore @ 5824e828); diferencias: imports desde ./tv/ y clave de preferencias propia.
 import { MAX_TABS, mergeTabs, parseLines, type Tab } from "./tv/tabs";
 import { renderCharts } from "./tv/chart";
+import { DEPRECATED_VERSION, hValue } from "./tv/decoder";
 import { showToast } from "./toast";
 
-const BMP_OFFSET_HPA = 800;
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 
 // Preferencias de la página: localStorage puede no estar disponible (modo privado).
@@ -59,6 +59,8 @@ function render() {
   const warns: string[] = [];
   if (skipped) warns.push(`Se muestran ${tabs.length} de ${tabs.length + skipped} líneas válidas (máx. ${MAX_TABS}).`);
   if (!tabs.length && !errors.length) warns.push("No hay líneas válidas con datos.");
+  const old = tabs.filter((t) => t.line && t.version === DEPRECATED_VERSION).map((t) => `L${t.line}`);
+  if (old.length) warns.push(`Formato v1 deprecado (${old.join(", ")}): actualiza el firmware del repeater a v3. El soporte de v1 se retirará.`);
   banner("err", errors.join("\n"));
   if (!tabs.length) return banner("warn", warns.join("\n"));
 
@@ -73,9 +75,9 @@ function render() {
     bar.appendChild(b);
   });
 
-  const { kind, samples } = tabs[active];
+  const { kind, version, samples } = tabs[active];
   const bmp = kind === "BMP280", local = $<HTMLInputElement>("local").checked;
-  const hVal = (h: number) => (bmp ? h + BMP_OFFSET_HPA : h);
+  const hVal = (h: number) => hValue(kind, version, h);
   if (showCharts && samples.length < 2) warns.push("Se necesitan al menos 2 puntos para graficar.");
   banner("warn", warns.join("\n"));
 
